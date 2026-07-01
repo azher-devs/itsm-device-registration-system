@@ -1,29 +1,88 @@
 # ITSM Device Registration System
 
-Flutter UI for the ITSM Device Registration System used by Sultan Qaboos University IT Department to register and update employee devices.
+A Flutter mobile application developed for the Sultan Qaboos University (SQU) IT Department to register, update, and manage employee device assignments.
 
-## Current Phase
+## Overview
 
-Week 3 focuses on UI, responsive layout, theme, localization, and navigation only. Backend API integration, Riverpod state management, Dio requests, and real barcode scanning are intentionally not implemented yet.
+The application simplifies the process of assigning IT assets to employees by allowing staff to search for devices, scan barcodes, and register ownership information through a modern mobile interface.
+
+## Features
+
+- User authentication (Login)
+- Device registration
+- Barcode scanning
+- Employee ID verification
+- Arabic & English localization
+- Responsive UI
+- Light & Dark theme support
+- Session persistence
+
+## Technologies
+
+- Flutter
+- Dart
+- Riverpod
+- Dio
+- Google ML Kit (Barcode Scanning)
+- Shared Preferences
 
 ## Project Structure
 
-The project uses a top-level MVC-style organization because the current app is UI-first and each feature is still lightweight:
+```text
+lib/
+├── core/
+├── models/
+├── shared/
+├── views/
+├── l10n/
+└── main.dart
+```
 
-- `lib/app/`: Root application shell, routing, theme wiring, and localization wiring.
-- `lib/models/`: Data objects and placeholder data used by the UI-only flow.
-- `lib/views/`: Screen-level UI grouped by feature area.
-- `lib/controllers/`: App state controllers such as locale and theme persistence.
-- `lib/shared/widgets/`: Reusable UI components.
-- `lib/core/`: Shared constants and theme definitions.
-- `lib/l10n/`: English and Arabic localization resources and generated localizations.
+## Screens
 
-## Validation
+- Splash Screen
+- Login
+- Home
+- Device Registration
+- Barcode Scanner
+- Registration Result
 
-Run these checks after UI or structure changes:
+## Getting Started
+
+Clone the repository:
 
 ```bash
-flutter analyze
-flutter test
-flutter build web
+git clone https://github.com/azher-devs/itsm-device-registration-system.git
 ```
+
+Install dependencies:
+
+```bash
+flutter pub get
+```
+
+Run the application:
+
+```bash
+flutter run
+```
+
+## Requirements
+
+- Flutter SDK
+- Dart SDK
+- Android Studio or Visual Studio Code
+
+## Disclaimer
+
+This project was developed as part of an On-the-Job Training (OJT) program at Sultan Qaboos University.
+
+## Author
+
+**Al Azher Al Kindi**
+
+Software Engineering Student
+
+University of Technology and Applied Sciences (UTAS), Oman
+
+GitHub: https://github.com/azher-devs
