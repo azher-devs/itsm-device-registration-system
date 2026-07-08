@@ -428,6 +428,24 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to submit the registration?'**
   String get submitConfirmationMessage;
 
+  /// No description provided for @initializingCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Initializing camera...'**
+  String get initializingCamera;
+
+  /// No description provided for @cameraPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission is required to scan barcodes.'**
+  String get cameraPermissionDenied;
+
+  /// No description provided for @cameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera is unavailable. Use manual entry instead.'**
+  String get cameraUnavailable;
+
   /// No description provided for @flash.
   ///
   /// In en, this message translates to:

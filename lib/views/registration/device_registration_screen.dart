@@ -242,15 +242,26 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
     );
   }
 
-  /// Navigates to the scanner placeholder screen.
-  void _openScanner() {
-    Navigator.of(context).pushNamed(AppRoutes.scanner);
+  /// Opens the scanner and applies the returned tag using the existing lookup flow.
+  Future<void> _openScanner() async {
+    final scannedTag = await Navigator.of(context).pushNamed(AppRoutes.scanner);
+
+    if (!mounted || scannedTag is! String || scannedTag.trim().isEmpty) {
+      return;
+    }
+
+    _applyTagLookup(scannedTag.trim());
   }
 
   /// Fills and validates placeholder device data until real lookup is connected.
   void _searchTagNumber() {
+    _applyTagLookup(PlaceholderDeviceData.tagNumber);
+  }
+
+  /// Applies a scanned or searched tag and fills placeholder device details.
+  void _applyTagLookup(String tagNumber) {
     setState(() {
-      _tagController.text = PlaceholderDeviceData.tagNumber;
+      _tagController.text = tagNumber;
       _serialController.text = PlaceholderDeviceData.serialNumber;
       _showDeviceData = true;
       _hasTagError = false;
@@ -271,7 +282,7 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
   void _submitRegistration() {
     FocusScope.of(context).unfocus();
 
-    final tagValid = _isValidTagNumber(_tagController.text);
+    final tagValid = _isTagReadyForSubmit();
     final serialValid = _isValidSerialNumber(_serialController.text);
     final employeeValid = _isValidEmployeeId(_employeeController.text);
 
@@ -419,6 +430,18 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
   /// Checks the placeholder tag number format used by the current UI-only flow.
   bool _isValidTagNumber(String value) {
     return RegExp(r'^TAG-\d{4}-\d{6}$').hasMatch(value.trim());
+  }
+
+  /// Accepts typed placeholder tags or scanned tags that completed lookup.
+  bool _isTagReadyForSubmit() {
+    final tagNumber = _tagController.text.trim();
+    if (tagNumber.isEmpty) {
+      return false;
+    }
+
+    // Scanned barcodes can use real asset tag formats, so successful lookup
+    // makes the current tag valid even when it is not the placeholder pattern.
+    return _isValidTagNumber(tagNumber) || _showDeviceData;
   }
 
   /// Checks the placeholder serial number format used by the current UI-only flow.

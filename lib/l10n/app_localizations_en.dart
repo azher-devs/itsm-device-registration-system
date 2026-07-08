@@ -178,6 +178,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to submit the registration?';
 
   @override
+  String get initializingCamera => 'Initializing camera...';
+
+  @override
+  String get cameraPermissionDenied =>
+      'Camera permission is required to scan barcodes.';
+
+  @override
+  String get cameraUnavailable =>
+      'Camera is unavailable. Use manual entry instead.';
+
+  @override
   String get flash => 'Flash';
 
   @override

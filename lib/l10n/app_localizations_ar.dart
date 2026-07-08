@@ -178,6 +178,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'هل أنت متأكد أنك تريد إرسال التسجيل؟';
 
   @override
+  String get initializingCamera => 'جاري تهيئة الكاميرا...';
+
+  @override
+  String get cameraPermissionDenied => 'إذن الكاميرا مطلوب لمسح الباركود.';
+
+  @override
+  String get cameraUnavailable =>
+      'الكاميرا غير متاحة. استخدم الإدخال اليدوي بدلاً من ذلك.';
+
+  @override
   String get flash => 'الفلاش';
 
   @override

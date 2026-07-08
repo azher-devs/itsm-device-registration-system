@@ -197,6 +197,58 @@ void main() {
     expect(find.text('Scanner Route'), findsOneWidget);
   });
 
+  // Verifies scanned tags are accepted after lookup even when not hard-coded.
+  testWidgets('scanned tag value fills form and can be submitted', (
+    tester,
+  ) async {
+    const scannedTag = 'SQU-ASSET-98765';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routes: {
+          AppRoutes.scanner: (_) => Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(scannedTag),
+                child: const Text('Return Scan'),
+              );
+            },
+          ),
+          AppRoutes.success: (_) => const SuccessScreen(),
+        },
+        home: const DeviceRegistrationScreen(args: RegistrationScreenArgs()),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.camera_alt));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Return Scan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(scannedTag), findsOneWidget);
+    expect(find.text(PlaceholderDeviceData.brand), findsOneWidget);
+
+    await tester.ensureVisible(find.byIcon(Icons.search).last);
+    await tester.tap(find.byIcon(Icons.search).last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Submit'));
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid tag number.'), findsNothing);
+    expect(find.text('Confirm Submission'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(of: find.byType(Dialog), matching: find.text('Submit')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Success!'), findsOneWidget);
+  });
+
   // Ensures empty or incorrect placeholder data shows clear form errors.
   testWidgets('registration validates all visible input fields', (
     tester,
