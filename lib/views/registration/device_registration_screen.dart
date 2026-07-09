@@ -179,7 +179,7 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
                         icon: Icons.laptop_mac,
                         message: l10n.deviceInformationEmpty,
                       ),
-                const SizedBox(height: 22),
+                const _SectionDivider(),
                 ItsmTextField(
                   label: l10n.serialNumber,
                   hint: l10n.enterSerialNumber,
@@ -187,7 +187,7 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
                   errorText: _hasSerialError ? l10n.invalidSerialNumber : null,
                   onChanged: (_) => _clearSerialError(),
                 ),
-                const SizedBox(height: 16),
+                const _SectionDivider(),
                 ItsmTextField(
                   label: l10n.employeeId,
                   hint: l10n.enterEmployeeId,
@@ -590,6 +590,41 @@ class _ScannerFloatingButton extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Subtle section break used to separate registration form groups.
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  /// Builds a lightweight timeline-style divider without adding containers.
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lineColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE5E7EB);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 22),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(height: 1, color: lineColor),
+            Container(
+              width: 9,
+              height: 9,
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryBlue,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
         ),
       ),
     );
