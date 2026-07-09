@@ -107,22 +107,39 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final metrics = _RegistrationLayoutMetrics.fromWidth(
+      MediaQuery.sizeOf(context).width,
+    );
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: metrics.toolbarHeight,
+        leadingWidth: metrics.headerSideWidth,
         leading: IconButton(
           tooltip: l10n.back,
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text(l10n.deviceRegistration),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(l10n.deviceRegistration),
+        ),
         actions: [
-          IconButton(
-            tooltip: l10n.scanBarcode,
-            icon: const Icon(Icons.camera_alt),
-            onPressed: _openScanner,
+          SizedBox(
+            width: metrics.headerSideWidth,
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(end: metrics.endMargin),
+                child: _ScannerFloatingButton(
+                  tooltip: l10n.scanBarcode,
+                  size: metrics.fabSize,
+                  iconSize: metrics.iconSize,
+                  onPressed: _openScanner,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: KeyboardDismissArea(
@@ -479,5 +496,102 @@ class _DeviceRegistrationScreenState extends State<DeviceRegistrationScreen> {
         _showEmployeeData = false;
       });
     }
+  }
+}
+
+/// Responsive spacing values that keep the fixed FAB clear of form content.
+class _RegistrationLayoutMetrics {
+  const _RegistrationLayoutMetrics({
+    required this.fabSize,
+    required this.iconSize,
+    required this.endMargin,
+    required this.headerSideWidth,
+    required this.toolbarHeight,
+  });
+
+  /// Diameter of the scanner FAB.
+  final double fabSize;
+
+  /// Size of the camera icon inside the FAB.
+  final double iconSize;
+
+  /// Trailing distance from the constrained content edge.
+  final double endMargin;
+
+  /// Symmetric header side width keeps title centered and clear of controls.
+  final double headerSideWidth;
+
+  /// Toolbar height keeps the circular button inside the header SafeArea.
+  final double toolbarHeight;
+
+  /// Creates phone, foldable, and tablet friendly spacing from available width.
+  factory _RegistrationLayoutMetrics.fromWidth(double width) {
+    final isTabletLike = width >= 600;
+    final isCompactPhone = width < 360;
+    final fabSize = isTabletLike ? 64.0 : (isCompactPhone ? 52.0 : 56.0);
+    final iconSize = isTabletLike ? 28.0 : 26.0;
+    final endMargin = isTabletLike ? 18.0 : (isCompactPhone ? 12.0 : 16.0);
+
+    return _RegistrationLayoutMetrics(
+      fabSize: fabSize,
+      iconSize: iconSize,
+      endMargin: endMargin,
+      headerSideWidth: fabSize + endMargin + 8,
+      toolbarHeight: fabSize + 16,
+    );
+  }
+}
+
+/// Fixed scanner FAB positioned above the form content.
+class _ScannerFloatingButton extends StatelessWidget {
+  const _ScannerFloatingButton({
+    required this.tooltip,
+    required this.size,
+    required this.iconSize,
+    required this.onPressed,
+  });
+
+  /// Localized accessibility label for scanner navigation.
+  final String tooltip;
+
+  /// Responsive button diameter.
+  final double size;
+
+  /// Responsive camera icon size.
+  final double iconSize;
+
+  /// Opens the barcode scanner route.
+  final VoidCallback onPressed;
+
+  /// Builds a circular Material 3-style scanner action with brand styling.
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: Material(
+          color: AppTheme.primaryBlue,
+          elevation: 4,
+          shadowColor: Colors.black.withValues(alpha: 0.22),
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onPressed,
+            child: SizedBox.square(
+              key: const Key('registration_scanner_fab'),
+              dimension: size,
+              child: Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: iconSize,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

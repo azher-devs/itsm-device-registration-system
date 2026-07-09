@@ -159,7 +159,7 @@ void main() {
     expect(find.byIcon(Icons.qr_code_scanner), findsOneWidget);
   });
 
-  // Verifies the AppBar scanner action and bottom scan button use scanner navigation.
+  // Verifies the floating scanner action and bottom scan button use scanner navigation.
   testWidgets('registration scanner actions navigate to scanner route', (
     tester,
   ) async {
@@ -195,6 +195,54 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Scanner Route'), findsOneWidget);
+  });
+
+  // Verifies the floating camera action uses responsive phone and tablet sizing.
+  testWidgets('registration scanner FAB scales by viewport width', (
+    tester,
+  ) async {
+    await pumpResponsiveWidget(
+      tester,
+      size: const Size(390, 844),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: DeviceRegistrationScreen(args: RegistrationScreenArgs()),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byKey(const Key('registration_scanner_fab'))),
+      const Size(56, 56),
+    );
+
+    final phoneFabRect = tester.getRect(
+      find.byKey(const Key('registration_scanner_fab')),
+    );
+    final phoneTitleRect = tester.getRect(find.text('Device Registration'));
+    final phoneTagLabelRect = tester.getRect(find.text('Tag Number'));
+
+    expect(
+      (phoneFabRect.center.dy - phoneTitleRect.center.dy).abs(),
+      lessThanOrEqualTo(12),
+    );
+    expect(phoneFabRect.top, lessThan(phoneTagLabelRect.top));
+    expect(phoneFabRect.right, lessThanOrEqualTo(390 - 12));
+
+    await pumpResponsiveWidget(
+      tester,
+      size: const Size(834, 1112),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: DeviceRegistrationScreen(args: RegistrationScreenArgs()),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byKey(const Key('registration_scanner_fab'))),
+      const Size(64, 64),
+    );
   });
 
   // Verifies scanned tags are accepted after lookup even when not hard-coded.
@@ -282,6 +330,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.byIcon(Icons.search).last);
     await tester.tap(find.byIcon(Icons.search).last);
     await tester.pumpAndSettle();
 
