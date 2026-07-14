@@ -155,7 +155,11 @@ class _DeviceRegistrationScreenState
                           icon: const Icon(Icons.search),
                           onPressed: state.isBusy ? null : _searchTagNumber,
                         ),
-                  errorText: state.tagError ? l10n.deviceLookupFailed : null,
+                  errorText: state.tagError
+                      ? (state.tagTimedOut
+                            ? l10n.deviceLookupTimeout
+                            : l10n.deviceLookupFailed)
+                      : null,
                   onChanged: (_) => ref
                       .read(deviceRegistrationControllerProvider.notifier)
                       .clearTagError(),
@@ -246,7 +250,7 @@ class _DeviceRegistrationScreenState
           l10n.serialNumber,
           _valueOrUnavailable(device.serialNumber, l10n),
         ),
-        InfoRow(l10n.status, _valueOrUnavailable(device.status, l10n)),
+        InfoRow(l10n.status, _localizedDeviceStatus(device.status, l10n)),
         InfoRow(
           l10n.assignmentStatus,
           device.isAssigned ? l10n.assigned : l10n.notAssigned,
@@ -394,6 +398,15 @@ class _DeviceRegistrationScreenState
   /// Uses localized fallback copy for optional empty API values.
   String _valueOrUnavailable(String value, AppLocalizations l10n) {
     return value.trim().isEmpty ? l10n.notAvailable : value;
+  }
+
+  /// Localizes assignment-like demo statuses without changing API values.
+  String _localizedDeviceStatus(String status, AppLocalizations l10n) {
+    return switch (status.trim().toLowerCase()) {
+      'assigned' => l10n.assigned,
+      'not assigned' => l10n.notAssigned,
+      _ => _valueOrUnavailable(status, l10n),
+    };
   }
 }
 

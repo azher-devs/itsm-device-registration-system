@@ -32,6 +32,7 @@ class DeviceRegistrationState {
     this.employee,
     this.operation = RegistrationOperation.idle,
     this.tagError = false,
+    this.tagTimedOut = false,
     this.employeeError = false,
     this.notice,
     this.noticeVersion = 0,
@@ -41,6 +42,7 @@ class DeviceRegistrationState {
   final Employee? employee;
   final RegistrationOperation operation;
   final bool tagError;
+  final bool tagTimedOut;
   final bool employeeError;
   final RegistrationNotice? notice;
 
@@ -66,6 +68,7 @@ class DeviceRegistrationState {
     Employee? employee,
     RegistrationOperation? operation,
     bool? tagError,
+    bool? tagTimedOut,
     bool? employeeError,
     RegistrationNotice? notice,
     int? noticeVersion,
@@ -78,6 +81,7 @@ class DeviceRegistrationState {
       employee: clearEmployee ? null : employee ?? this.employee,
       operation: operation ?? this.operation,
       tagError: tagError ?? this.tagError,
+      tagTimedOut: tagTimedOut ?? this.tagTimedOut,
       employeeError: employeeError ?? this.employeeError,
       notice: clearNotice ? null : notice ?? this.notice,
       noticeVersion: noticeVersion ?? this.noticeVersion,
@@ -141,6 +145,7 @@ class DeviceRegistrationController
     state = state.copyWith(
       operation: RegistrationOperation.loadingDevice,
       tagError: false,
+      tagTimedOut: false,
       employeeError: false,
       clearDevice: true,
       clearEmployee: true,
@@ -159,10 +164,20 @@ class DeviceRegistrationController
         await _loadAssignedEmployee(assignedEmployee);
       }
       return true;
+    } on RegistrationTimeoutException {
+      state = state.copyWith(
+        operation: RegistrationOperation.idle,
+        tagError: true,
+        tagTimedOut: true,
+        clearDevice: true,
+        clearEmployee: true,
+      );
+      return false;
     } catch (_) {
       state = state.copyWith(
         operation: RegistrationOperation.idle,
         tagError: true,
+        tagTimedOut: false,
         clearDevice: true,
         clearEmployee: true,
       );
@@ -223,6 +238,7 @@ class DeviceRegistrationController
       );
       state = state.copyWith(
         device: device.copyWith(
+          status: 'Assigned',
           contacts: [DeviceContact(employeeNumber: employee.employeeNumber)],
         ),
         operation: RegistrationOperation.idle,
@@ -252,7 +268,7 @@ class DeviceRegistrationController
         employeeNumber: employeeNumber,
       );
       state = state.copyWith(
-        device: device.copyWith(contacts: const []),
+        device: device.copyWith(status: 'Not Assigned', contacts: const []),
         operation: RegistrationOperation.idle,
         employeeError: false,
         clearEmployee: true,
@@ -269,7 +285,7 @@ class DeviceRegistrationController
   /// Clears tag validation feedback while users correct the input.
   void clearTagError() {
     if (state.tagError) {
-      state = state.copyWith(tagError: false);
+      state = state.copyWith(tagError: false, tagTimedOut: false);
     }
   }
 

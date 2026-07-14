@@ -184,6 +184,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Device not found. Check the tag number and try again.';
 
   @override
+  String get deviceLookupTimeout =>
+      'Device lookup timed out. Please try again.';
+
+  @override
   String get employeeLookupFailed =>
       'Employee not found. Check the employee ID and try again.';
 
@@ -266,6 +270,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manualEntry => 'Manual Entry';
+
+  @override
+  String get manualTagEntry => 'Enter Tag Number';
+
+  @override
+  String get enterTagNumber => 'Enter a tag number';
 
   @override
   String get success => 'Success!';

@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Device not found. Check the tag number and try again.'**
   String get deviceLookupFailed;
 
+  /// No description provided for @deviceLookupTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Device lookup timed out. Please try again.'**
+  String get deviceLookupTimeout;
+
   /// No description provided for @employeeLookupFailed.
   ///
   /// In en, this message translates to:
@@ -589,6 +595,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manual Entry'**
   String get manualEntry;
+
+  /// No description provided for @manualTagEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Tag Number'**
+  String get manualTagEntry;
+
+  /// No description provided for @enterTagNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a tag number'**
+  String get enterTagNumber;
 
   /// No description provided for @success.
   ///

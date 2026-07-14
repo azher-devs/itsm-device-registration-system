@@ -184,6 +184,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يتم العثور على الجهاز. تحقق من رقم الجهاز وحاول مرة أخرى.';
 
   @override
+  String get deviceLookupTimeout =>
+      'انتهت مهلة البحث عن الجهاز. يرجى المحاولة مرة أخرى.';
+
+  @override
   String get employeeLookupFailed =>
       'لم يتم العثور على الموظف. تحقق من الرقم الوظيفي وحاول مرة أخرى.';
 
@@ -264,6 +268,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get manualEntry => 'إدخال يدوي';
+
+  @override
+  String get manualTagEntry => 'إدخال رقم الجهاز';
+
+  @override
+  String get enterTagNumber => 'أدخل رقم الجهاز';
 
   @override
   String get success => 'تم بنجاح!';

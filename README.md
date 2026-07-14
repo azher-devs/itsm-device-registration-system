@@ -79,6 +79,46 @@ flutter run --dart-define=ITSM_API_BASE_URL=https://your-api-host
 
 Without this value, development builds use `http://localhost`.
 
+## UI Demo Mode
+
+The current demo phase focuses on Device Registration UI, UX, screen states,
+assignment actions, and supervisor review. Demo Mode uses an in-memory repository,
+does not call a real API, and does not require a backend, Base URL, credentials,
+or internet access. Demo assignments reset when the application restarts.
+
+Run the normal production entry point:
+
+```bash
+flutter run
+```
+
+Run the local UI demo:
+
+```bash
+flutter run -t lib/main_demo.dart
+```
+
+Run the demo on a specific device:
+
+```bash
+flutter run -d <device-id> -t lib/main_demo.dart
+```
+
+Available Device Registration values:
+
+- `TAG-UNASSIGNED` - unassigned Dell laptop
+- `TAG-ASSIGNED` - assigned HP desktop
+- `TAG-SECOND` - second unassigned Lenovo tablet
+- `TAG-ADD-FAIL` - simulates an Add failure
+- `TAG-REMOVE-FAIL` - simulates a Remove failure
+- `TAG-TIMEOUT` - simulates a three-second lookup timeout
+- `TAG-NOT-FOUND` - simulates a missing device
+- `EMP-10045` - valid employee
+- `EMP-NOT-FOUND` - simulates a missing employee
+
+The final API will be integrated later in a separate feature branch. The current
+provisional API contract is retained for future work and is not considered final.
+
 ## Requirements
 
 - Flutter SDK

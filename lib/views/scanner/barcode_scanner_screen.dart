@@ -8,7 +8,6 @@ import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/placeholder_data.dart';
 
 /// Camera-based barcode scanner used by the registration flow.
 class BarcodeScannerScreen extends StatefulWidget {
@@ -281,9 +280,48 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
   }
 
-  /// Returns placeholder data when users choose manual fallback.
-  void _returnManualFallback() {
-    Navigator.of(context).pop(PlaceholderDeviceData.tagNumber);
+  /// Lets users return any typed tag when camera scanning is unavailable.
+  Future<void> _returnManualFallback() async {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController();
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.manualTagEntry),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(hintText: l10n.enterTagNumber),
+          onSubmitted: (value) {
+            final normalized = value.trim();
+            if (normalized.isNotEmpty) {
+              Navigator.of(dialogContext).pop(normalized);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final normalized = controller.text.trim();
+              if (normalized.isNotEmpty) {
+                Navigator.of(dialogContext).pop(normalized);
+              }
+            },
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (mounted && tag != null) {
+      Navigator.of(context).pop(tag);
+    }
   }
 
   /// Records a scanner setup error and stops the loading state.

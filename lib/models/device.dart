@@ -104,13 +104,13 @@ class Device {
   }
 
   /// Returns an updated device after assignment state changes locally.
-  Device copyWith({List<DeviceContact>? contacts}) {
+  Device copyWith({String? status, List<DeviceContact>? contacts}) {
     return Device(
       tagNumber: tagNumber,
       brand: brand,
       deviceType: deviceType,
       serialNumber: serialNumber,
-      status: status,
+      status: status ?? this.status,
       contacts: contacts ?? this.contacts,
     );
   }

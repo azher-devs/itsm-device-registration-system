@@ -14,6 +14,11 @@ class RegistrationDataException implements Exception {
   String toString() => message;
 }
 
+/// Signals a repository timeout without exposing its transport implementation.
+class RegistrationTimeoutException implements Exception {
+  const RegistrationTimeoutException();
+}
+
 /// Contract consumed by Riverpod and replaced by fakes in widget tests.
 abstract class DeviceRegistrationRepository {
   Future<Device> getDevice(String barcode);
