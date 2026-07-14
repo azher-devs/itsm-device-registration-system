@@ -216,6 +216,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get remove => 'Remove';
 
   @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get assignDevice => 'Assign Device';
+
+  @override
+  String get assignDeviceConfirmation =>
+      'Are you sure you want to assign this device?';
+
+  @override
+  String get removeDeviceAssignmentConfirmation =>
+      'Are you sure you want to remove this employee from this device?';
+
+  @override
   String get addAssignment => 'Add Assignment';
 
   @override
@@ -230,11 +247,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to remove this employee from the device?';
 
   @override
-  String get assignmentAddedSuccessfully => 'Assignment added successfully.';
+  String get assignmentAddedSuccessfully =>
+      'The device has been assigned successfully.';
 
   @override
   String get assignmentRemovedSuccessfully =>
-      'Assignment removed successfully.';
+      'Employee removed from the device successfully.';
 
   @override
   String get assignmentAddFailure =>

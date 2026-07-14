@@ -216,6 +216,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get remove => 'إزالة';
 
   @override
+  String get yes => 'نعم';
+
+  @override
+  String get no => 'لا';
+
+  @override
+  String get assignDevice => 'تخصيص الجهاز';
+
+  @override
+  String get assignDeviceConfirmation =>
+      'هل أنت متأكد أنك تريد تخصيص هذا الجهاز؟';
+
+  @override
+  String get removeDeviceAssignmentConfirmation =>
+      'هل أنت متأكد أنك تريد إزالة هذا الموظف من هذا الجهاز؟';
+
+  @override
   String get addAssignment => 'إضافة العهدة';
 
   @override
@@ -230,10 +247,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'هل أنت متأكد أنك تريد إزالة هذا الموظف من الجهاز؟';
 
   @override
-  String get assignmentAddedSuccessfully => 'تمت إضافة العهدة بنجاح.';
+  String get assignmentAddedSuccessfully => 'تم تخصيص الجهاز بنجاح.';
 
   @override
-  String get assignmentRemovedSuccessfully => 'تمت إزالة العهدة بنجاح.';
+  String get assignmentRemovedSuccessfully =>
+      'تمت إزالة الموظف من الجهاز بنجاح.';
 
   @override
   String get assignmentAddFailure =>

@@ -200,7 +200,9 @@ void main() {
     expect(find.text('Cancel'), findsNothing);
   });
 
-  testWidgets('Add dialog cancel sends no request', (tester) async {
+  testWidgets('Assign Device dialog shows identifiers and No cancels', (
+    tester,
+  ) async {
     await pumpRegistration(tester);
     await searchDevice(tester, unassignedDevice.tagNumber);
     await searchEmployee(tester);
@@ -208,11 +210,32 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
     await tester.tap(find.byKey(const Key('add_assignment_button')));
     await tester.pumpAndSettle();
-    expect(find.text('Add Assignment'), findsOneWidget);
+    final dialog = find.byKey(const Key('assignment_confirmation_dialog'));
+    expect(find.text('Assign Device'), findsOneWidget);
+    expect(
+      find.text('Are you sure you want to assign this device?'),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text(unassignedDevice.tagNumber),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text(employee.employeeNumber)),
+      findsOneWidget,
+    );
+    expect(find.text('Yes'), findsOneWidget);
 
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('No'));
     await tester.pumpAndSettle();
     expect(repository.addCalls, 0);
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsNothing,
+    );
   });
 
   testWidgets('confirmed Add sends POST action and changes to Remove', (
@@ -226,11 +249,23 @@ void main() {
     await tester.tap(find.byKey(const Key('add_assignment_button')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('confirm_assignment_action')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(repository.addCalls, 1);
     expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
     expect(find.text(employee.fullName), findsOneWidget);
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsOneWidget,
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsNothing,
+    );
   });
 
   testWidgets('failed Add preserves employee and unassigned state', (
@@ -254,6 +289,10 @@ void main() {
       find.text('Unable to add the assignment. Please try again.'),
       findsOneWidget,
     );
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsNothing,
+    );
   });
 
   testWidgets('assigned device loads employee and shows only Remove', (
@@ -270,7 +309,9 @@ void main() {
     );
   });
 
-  testWidgets('Remove dialog cancel sends no request', (tester) async {
+  testWidgets('Remove Assignment dialog shows identifiers and No cancels', (
+    tester,
+  ) async {
     await pumpRegistration(tester, initialTag: assignedDevice.tagNumber);
     await tester.ensureVisible(
       find.byKey(const Key('remove_assignment_button')),
@@ -279,9 +320,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Remove Assignment'), findsOneWidget);
-    await tester.tap(find.text('Cancel'));
+    expect(
+      find.text(
+        'Are you sure you want to remove this employee from this device?',
+      ),
+      findsOneWidget,
+    );
+    final dialog = find.byKey(const Key('assignment_confirmation_dialog'));
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text(assignedDevice.tagNumber),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text(employee.employeeNumber)),
+      findsOneWidget,
+    );
+    expect(find.text('Yes'), findsOneWidget);
+
+    await tester.tap(find.text('No'));
     await tester.pumpAndSettle();
     expect(repository.removeCalls, 0);
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsNothing,
+    );
   });
 
   testWidgets('confirmed Remove clears employee but preserves device', (
@@ -294,7 +359,8 @@ void main() {
     await tester.tap(find.byKey(const Key('remove_assignment_button')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('confirm_assignment_action')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(repository.removeCalls, 1);
     expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
@@ -304,6 +370,17 @@ void main() {
     expect(
       tester.widget<TextField>(field('employee_id_field')).controller?.text,
       isEmpty,
+    );
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsOneWidget,
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsNothing,
     );
   });
 
@@ -325,6 +402,10 @@ void main() {
     expect(
       find.text('Unable to remove the assignment. Please try again.'),
       findsOneWidget,
+    );
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsNothing,
     );
   });
 
@@ -360,10 +441,12 @@ void main() {
     await tester.tap(find.byKey(const Key('add_assignment_button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('إضافة العهدة'), findsOneWidget);
+    expect(find.text('تخصيص الجهاز'), findsOneWidget);
     expect(
-      find.text('هل أنت متأكد أنك تريد ربط هذا الجهاز بالموظف المحدد؟'),
+      find.text('هل أنت متأكد أنك تريد تخصيص هذا الجهاز؟'),
       findsOneWidget,
     );
+    expect(find.text('لا'), findsOneWidget);
+    expect(find.text('نعم'), findsOneWidget);
   });
 }

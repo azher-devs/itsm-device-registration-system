@@ -1,7 +1,5 @@
 // Device lookup and employee assignment screen.
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -324,19 +322,14 @@ class _DeviceRegistrationScreenState
 
   /// Shows an assignment-specific confirmation dialog before making a request.
   Future<void> _showAssignmentConfirmation({required bool isRemove}) async {
-    final l10n = AppLocalizations.of(context);
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.58),
       builder: (dialogContext) => _AssignmentConfirmationDialog(
         isRemove: isRemove,
-        title: isRemove ? l10n.removeAssignment : l10n.addAssignment,
-        message: isRemove
-            ? l10n.removeAssignmentConfirmation
-            : l10n.addAssignmentConfirmation,
-        cancelLabel: l10n.cancel,
-        confirmLabel: isRemove ? l10n.remove : l10n.add,
+        tagNumber: _tagController.text.trim(),
+        employeeId: _employeeController.text.trim(),
         onConfirm: () async {
           final controller = ref.read(
             deviceRegistrationControllerProvider.notifier,
@@ -391,6 +384,7 @@ class _DeviceRegistrationScreenState
         SnackBar(
           content: Text(message),
           backgroundColor: isFailure ? AppTheme.danger : AppTheme.success,
+          duration: const Duration(milliseconds: 2500),
         ),
       );
   }
@@ -448,18 +442,14 @@ class _AssignmentActionButton extends StatelessWidget {
 class _AssignmentConfirmationDialog extends StatefulWidget {
   const _AssignmentConfirmationDialog({
     required this.isRemove,
-    required this.title,
-    required this.message,
-    required this.cancelLabel,
-    required this.confirmLabel,
+    required this.tagNumber,
+    required this.employeeId,
     required this.onConfirm,
   });
 
   final bool isRemove;
-  final String title;
-  final String message;
-  final String cancelLabel;
-  final String confirmLabel;
+  final String tagNumber;
+  final String employeeId;
   final Future<bool> Function() onConfirm;
 
   @override
@@ -474,108 +464,77 @@ class _AssignmentConfirmationDialogState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final dialogWidth = (MediaQuery.sizeOf(context).width * 0.84).clamp(
-      280.0,
-      420.0,
-    );
     final actionColor = widget.isRemove
         ? AppTheme.danger
         : AppTheme.primaryBlue;
 
     return PopScope(
       canPop: !_isLoading,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-        child: Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          backgroundColor: Colors.transparent,
-          child: SizedBox(
-            width: dialogWidth,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 30,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 34,
-                      backgroundColor: actionColor.withValues(alpha: 0.12),
-                      child: Icon(
-                        widget.isRemove ? Icons.link_off : Icons.add_link,
-                        color: actionColor,
-                        size: 34,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      widget.title,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.message,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Divider(color: colorScheme.outlineVariant),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () => Navigator.of(context).pop(),
-                            child: Text(widget.cancelLabel),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            key: const Key('confirm_assignment_action'),
-                            onPressed: _isLoading ? null : _confirm,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: actionColor,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: _isLoading
-                                ? const SizedBox.square(
-                                    dimension: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.4,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(widget.confirmLabel),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+      child: AlertDialog(
+        key: const Key('assignment_confirmation_dialog'),
+        icon: Icon(
+          widget.isRemove ? Icons.link_off : Icons.add_link,
+          color: actionColor,
+        ),
+        title: Text(
+          widget.isRemove ? l10n.removeAssignment : l10n.assignDevice,
+          textAlign: TextAlign.center,
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.isRemove
+                    ? l10n.removeDeviceAssignmentConfirmation
+                    : l10n.assignDeviceConfirmation,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.4,
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+              _ConfirmationDetail(
+                label: l10n.tagNumber,
+                value: widget.tagNumber,
+              ),
+              const SizedBox(height: 10),
+              _ConfirmationDetail(
+                label: l10n.employeeId,
+                value: widget.employeeId,
+              ),
+            ],
           ),
         ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
+        actions: [
+          TextButton(
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            child: Text(l10n.no),
+          ),
+          FilledButton(
+            key: const Key('confirm_assignment_action'),
+            onPressed: _isLoading ? null : _confirm,
+            style: FilledButton.styleFrom(
+              backgroundColor: actionColor,
+              foregroundColor: Colors.white,
+            ),
+            child: _isLoading
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(l10n.yes),
+          ),
+        ],
       ),
     );
   }
@@ -590,6 +549,51 @@ class _AssignmentConfirmationDialogState
     if (mounted) {
       Navigator.of(context).pop();
     }
+  }
+}
+
+/// Displays one identifier inside the shared confirmation dialog.
+class _ConfirmationDetail extends StatelessWidget {
+  const _ConfirmationDetail({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

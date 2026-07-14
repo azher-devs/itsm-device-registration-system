@@ -500,6 +500,36 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get remove;
 
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
+  /// No description provided for @assignDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Device'**
+  String get assignDevice;
+
+  /// No description provided for @assignDeviceConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to assign this device?'**
+  String get assignDeviceConfirmation;
+
+  /// No description provided for @removeDeviceAssignmentConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this employee from this device?'**
+  String get removeDeviceAssignmentConfirmation;
+
   /// No description provided for @addAssignment.
   ///
   /// In en, this message translates to:
@@ -527,13 +557,13 @@ abstract class AppLocalizations {
   /// No description provided for @assignmentAddedSuccessfully.
   ///
   /// In en, this message translates to:
-  /// **'Assignment added successfully.'**
+  /// **'The device has been assigned successfully.'**
   String get assignmentAddedSuccessfully;
 
   /// No description provided for @assignmentRemovedSuccessfully.
   ///
   /// In en, this message translates to:
-  /// **'Assignment removed successfully.'**
+  /// **'Employee removed from the device successfully.'**
   String get assignmentRemovedSuccessfully;
 
   /// No description provided for @assignmentAddFailure.
