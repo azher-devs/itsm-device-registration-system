@@ -116,10 +116,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get assigned => 'مخصص';
 
   @override
+  String get notAssigned => 'غير مخصص';
+
+  @override
+  String get assignmentStatus => 'حالة العهدة';
+
+  @override
   String get serialNumber => 'الرقم التسلسلي';
 
   @override
   String get enterSerialNumber => 'أدخل الرقم التسلسلي';
+
+  @override
+  String get serialNumberFromDevice => 'يتم تحميله من الجهاز المحدد';
 
   @override
   String get employeeId => 'الرقم الوظيفي';
@@ -153,6 +162,32 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeeName => 'اسم الموظف';
 
   @override
+  String get email => 'البريد الإلكتروني';
+
+  @override
+  String get organization => 'المؤسسة / القسم';
+
+  @override
+  String get phone => 'الهاتف';
+
+  @override
+  String get jobTitle => 'المسمى الوظيفي';
+
+  @override
+  String get assignedEmployee => 'الموظف المخصص';
+
+  @override
+  String get notAvailable => 'غير متوفر';
+
+  @override
+  String get deviceLookupFailed =>
+      'لم يتم العثور على الجهاز. تحقق من رقم الجهاز وحاول مرة أخرى.';
+
+  @override
+  String get employeeLookupFailed =>
+      'لم يتم العثور على الموظف. تحقق من الرقم الوظيفي وحاول مرة أخرى.';
+
+  @override
   String get department => 'القسم';
 
   @override
@@ -169,6 +204,40 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get confirm => 'تأكيد';
+
+  @override
+  String get add => 'إضافة';
+
+  @override
+  String get remove => 'إزالة';
+
+  @override
+  String get addAssignment => 'إضافة العهدة';
+
+  @override
+  String get removeAssignment => 'إزالة العهدة';
+
+  @override
+  String get addAssignmentConfirmation =>
+      'هل أنت متأكد أنك تريد ربط هذا الجهاز بالموظف المحدد؟';
+
+  @override
+  String get removeAssignmentConfirmation =>
+      'هل أنت متأكد أنك تريد إزالة هذا الموظف من الجهاز؟';
+
+  @override
+  String get assignmentAddedSuccessfully => 'تمت إضافة العهدة بنجاح.';
+
+  @override
+  String get assignmentRemovedSuccessfully => 'تمت إزالة العهدة بنجاح.';
+
+  @override
+  String get assignmentAddFailure =>
+      'تعذرت إضافة العهدة. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get assignmentRemovalFailure =>
+      'تعذرت إزالة العهدة. يرجى المحاولة مرة أخرى.';
 
   @override
   String get confirmSubmission => 'تأكيد الإرسال';

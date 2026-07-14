@@ -308,6 +308,18 @@ abstract class AppLocalizations {
   /// **'Assigned'**
   String get assigned;
 
+  /// No description provided for @notAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Assigned'**
+  String get notAssigned;
+
+  /// No description provided for @assignmentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment Status'**
+  String get assignmentStatus;
+
   /// No description provided for @serialNumber.
   ///
   /// In en, this message translates to:
@@ -319,6 +331,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter serial number'**
   String get enterSerialNumber;
+
+  /// No description provided for @serialNumberFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded from selected device'**
+  String get serialNumberFromDevice;
 
   /// No description provided for @employeeId.
   ///
@@ -380,6 +398,54 @@ abstract class AppLocalizations {
   /// **'Employee Name'**
   String get employeeName;
 
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @organization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization / Department'**
+  String get organization;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @jobTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Function / Job Title'**
+  String get jobTitle;
+
+  /// No description provided for @assignedEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned employee'**
+  String get assignedEmployee;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get notAvailable;
+
+  /// No description provided for @deviceLookupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Device not found. Check the tag number and try again.'**
+  String get deviceLookupFailed;
+
+  /// No description provided for @employeeLookupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee not found. Check the employee ID and try again.'**
+  String get employeeLookupFailed;
+
   /// No description provided for @department.
   ///
   /// In en, this message translates to:
@@ -415,6 +481,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm'**
   String get confirm;
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @addAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Assignment'**
+  String get addAssignment;
+
+  /// No description provided for @removeAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Assignment'**
+  String get removeAssignment;
+
+  /// No description provided for @addAssignmentConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to assign this device to the selected employee?'**
+  String get addAssignmentConfirmation;
+
+  /// No description provided for @removeAssignmentConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this employee from the device?'**
+  String get removeAssignmentConfirmation;
+
+  /// No description provided for @assignmentAddedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment added successfully.'**
+  String get assignmentAddedSuccessfully;
+
+  /// No description provided for @assignmentRemovedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment removed successfully.'**
+  String get assignmentRemovedSuccessfully;
+
+  /// No description provided for @assignmentAddFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to add the assignment. Please try again.'**
+  String get assignmentAddFailure;
+
+  /// No description provided for @assignmentRemovalFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to remove the assignment. Please try again.'**
+  String get assignmentRemovalFailure;
 
   /// No description provided for @confirmSubmission.
   ///

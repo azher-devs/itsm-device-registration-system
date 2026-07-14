@@ -1,6 +1,7 @@
 // Application entry point and startup preference restoration.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/itsm_app.dart';
 import 'controllers/locale_controller.dart';
@@ -13,9 +14,11 @@ Future<void> main() async {
   final themeController = await ThemeController.load();
 
   runApp(
-    ItsmApp(
-      localeController: localeController,
-      themeController: themeController,
+    ProviderScope(
+      child: ItsmApp(
+        localeController: localeController,
+        themeController: themeController,
+      ),
     ),
   );
 }

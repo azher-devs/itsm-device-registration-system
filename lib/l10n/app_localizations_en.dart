@@ -116,10 +116,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assigned => 'Assigned';
 
   @override
+  String get notAssigned => 'Not Assigned';
+
+  @override
+  String get assignmentStatus => 'Assignment Status';
+
+  @override
   String get serialNumber => 'Serial Number';
 
   @override
   String get enterSerialNumber => 'Enter serial number';
+
+  @override
+  String get serialNumberFromDevice => 'Loaded from selected device';
 
   @override
   String get employeeId => 'Employee ID';
@@ -153,6 +162,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeeName => 'Employee Name';
 
   @override
+  String get email => 'Email';
+
+  @override
+  String get organization => 'Organization / Department';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get jobTitle => 'Function / Job Title';
+
+  @override
+  String get assignedEmployee => 'Assigned employee';
+
+  @override
+  String get notAvailable => 'Not available';
+
+  @override
+  String get deviceLookupFailed =>
+      'Device not found. Check the tag number and try again.';
+
+  @override
+  String get employeeLookupFailed =>
+      'Employee not found. Check the employee ID and try again.';
+
+  @override
   String get department => 'Department';
 
   @override
@@ -169,6 +204,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get confirm => 'Confirm';
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get addAssignment => 'Add Assignment';
+
+  @override
+  String get removeAssignment => 'Remove Assignment';
+
+  @override
+  String get addAssignmentConfirmation =>
+      'Are you sure you want to assign this device to the selected employee?';
+
+  @override
+  String get removeAssignmentConfirmation =>
+      'Are you sure you want to remove this employee from the device?';
+
+  @override
+  String get assignmentAddedSuccessfully => 'Assignment added successfully.';
+
+  @override
+  String get assignmentRemovedSuccessfully =>
+      'Assignment removed successfully.';
+
+  @override
+  String get assignmentAddFailure =>
+      'Unable to add the assignment. Please try again.';
+
+  @override
+  String get assignmentRemovalFailure =>
+      'Unable to remove the assignment. Please try again.';
 
   @override
   String get confirmSubmission => 'Confirm Submission';

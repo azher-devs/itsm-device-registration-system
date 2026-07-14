@@ -30,8 +30,12 @@ The application simplifies the process of assigning IT assets to employees by al
 
 ```text
 lib/
+├── app/
+├── controllers/
 ├── core/
 ├── models/
+├── repositories/
+├── services/
 ├── shared/
 ├── views/
 ├── l10n/
@@ -66,6 +70,14 @@ Run the application:
 ```bash
 flutter run
 ```
+
+Point the app at the ITSM API with a compile-time base URL:
+
+```bash
+flutter run --dart-define=ITSM_API_BASE_URL=https://your-api-host
+```
+
+Without this value, development builds use `http://localhost`.
 
 ## Requirements
 
