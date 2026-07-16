@@ -1,6 +1,8 @@
-// Employee data returned by the ITSM employee lookup endpoint.
+// Employee domain model mapped from documented iTop Person fields.
 
-/// Employee information displayed when searching or loading an assignment.
+import 'itop_response.dart';
+
+/// Employee profile returned from the iTop `Person` class.
 class Employee {
   const Employee({
     required this.employeeNumber,
@@ -10,68 +12,82 @@ class Employee {
     required this.phone,
     required this.status,
     required this.jobTitle,
+    this.itopKey = '',
+    this.firstName = '',
+    this.lastName = '',
   });
 
-  /// Employee identifier used by assignment API requests.
+  /// iTop Person key used by assignment linkage operations.
+  final String itopKey;
   final String employeeNumber;
-
-  /// Employee display name.
+  final String firstName;
+  final String lastName;
   final String fullName;
-
-  /// Employee email address when supplied by the API.
   final String email;
-
-  /// Organization or department name.
   final String organization;
-
-  /// Employee contact number.
   final String phone;
-
-  /// Current employee status.
   final String status;
-
-  /// Function or job title.
   final String jobTitle;
 
-  /// Parses common iTop field variants without assuming every field exists.
-  factory Employee.fromJson(Map<String, dynamic> json) {
+  /// Maps the exact fields returned by both documented Person searches.
+  factory Employee.fromItopObject(ItopObject object) {
+    final fields = object.fields;
+    final firstName = _stringValue(fields, const ['first_name']);
+    final lastName = _stringValue(fields, const ['name']);
     return Employee(
+      itopKey: object.key,
+      employeeNumber: _stringValue(fields, const ['employee_number']),
+      firstName: firstName,
+      lastName: lastName,
+      fullName: [
+        firstName,
+        lastName,
+      ].where((part) => part.isNotEmpty).join(' '),
+      email: _stringValue(fields, const ['email']),
+      organization: _stringValue(fields, const ['org_id_friendlyname']),
+      phone: _stringValue(fields, const ['phone']),
+      status: _stringValue(fields, const ['status']),
+      jobTitle: _stringValue(fields, const ['function']),
+    );
+  }
+
+  /// Compatibility mapper that recognizes documented iTop field names first.
+  factory Employee.fromJson(Map<String, dynamic> json) {
+    final firstName = _stringValue(json, const ['first_name', 'firstName']);
+    final lastName = _stringValue(json, const ['name', 'lastName']);
+    final explicitFullName = _stringValue(json, const [
+      'full_name',
+      'fullName',
+      'friendlyname',
+    ]);
+    return Employee(
+      itopKey: _stringValue(json, const ['key', 'id', 'contact_id']),
       employeeNumber: _stringValue(json, const [
         'employee_number',
         'employeeNumber',
         'employee_id',
-        'employeeId',
-        'number',
       ]),
-      fullName: _stringValue(json, const [
-        'full_name',
-        'fullName',
-        'name',
-        'friendlyname',
-      ]),
-      email: _stringValue(json, const ['email', 'email_address']),
+      firstName: firstName,
+      lastName: lastName,
+      fullName: explicitFullName.isNotEmpty
+          ? explicitFullName
+          : [firstName, lastName].where((part) => part.isNotEmpty).join(' '),
+      email: _stringValue(json, const ['email']),
       organization: _stringValue(json, const [
+        'org_id_friendlyname',
         'organization',
-        'organisation',
         'department',
-        'org_name',
       ]),
-      phone: _stringValue(json, const ['phone', 'telephone', 'mobile']),
-      status: _stringValue(json, const ['status', 'status_name', 'state']),
-      jobTitle: _stringValue(json, const [
-        'function',
-        'job_title',
-        'jobTitle',
-        'title',
-      ]),
+      phone: _stringValue(json, const ['phone']),
+      status: _stringValue(json, const ['status']),
+      jobTitle: _stringValue(json, const ['function', 'job_title', 'jobTitle']),
     );
   }
 
-  /// Employee searches are valid only when the API returns an identifier.
-  bool get isValid => employeeNumber.trim().isNotEmpty;
+  bool get isValid =>
+      employeeNumber.trim().isNotEmpty && itopKey.trim().isNotEmpty;
 }
 
-/// Reads the first non-empty scalar value matching a known API key.
 String _stringValue(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {
     final value = json[key];

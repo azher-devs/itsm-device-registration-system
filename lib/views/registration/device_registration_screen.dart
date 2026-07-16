@@ -97,7 +97,7 @@ class _DeviceRegistrationScreenState
       _synchronizeFields(previous, next);
       if (previous?.noticeVersion != next.noticeVersion &&
           next.notice != null) {
-        _showNotice(next.notice!, l10n);
+        _showNotice(next.notice!, l10n, apiMessage: next.noticeMessage);
       }
     });
 
@@ -154,9 +154,10 @@ class _DeviceRegistrationScreenState
                           onPressed: state.isBusy ? null : _searchTagNumber,
                         ),
                   errorText: state.tagError
-                      ? (state.tagTimedOut
-                            ? l10n.deviceLookupTimeout
-                            : l10n.deviceLookupFailed)
+                      ? state.tagErrorMessage ??
+                            (state.tagTimedOut
+                                ? l10n.deviceLookupTimeout
+                                : l10n.invalidTagNumber)
                       : null,
                   onChanged: (_) => ref
                       .read(deviceRegistrationControllerProvider.notifier)
@@ -195,7 +196,7 @@ class _DeviceRegistrationScreenState
                               : null,
                         ),
                   errorText: state.employeeError
-                      ? l10n.employeeLookupFailed
+                      ? state.employeeErrorMessage ?? l10n.invalidEmployeeId
                       : null,
                   onChanged: (_) => ref
                       .read(deviceRegistrationControllerProvider.notifier)
@@ -257,7 +258,7 @@ class _DeviceRegistrationScreenState
     );
   }
 
-  /// Displays the complete employee response without hiding optional fields.
+  /// Displays the three employee details required by the current UI.
   Widget _buildEmployeeCard(Employee? employee, AppLocalizations l10n) {
     if (employee == null) {
       return InfoCard.empty(
@@ -279,14 +280,10 @@ class _DeviceRegistrationScreenState
           l10n.employeeName,
           _valueOrUnavailable(employee.fullName, l10n),
         ),
-        InfoRow(l10n.email, _valueOrUnavailable(employee.email, l10n)),
         InfoRow(
           l10n.organization,
           _valueOrUnavailable(employee.organization, l10n),
         ),
-        InfoRow(l10n.phone, _valueOrUnavailable(employee.phone, l10n)),
-        InfoRow(l10n.status, _valueOrUnavailable(employee.status, l10n)),
-        InfoRow(l10n.jobTitle, _valueOrUnavailable(employee.jobTitle, l10n)),
       ],
     );
   }
@@ -365,18 +362,25 @@ class _DeviceRegistrationScreenState
   }
 
   /// Converts controller notices to localized, theme-aware snackbars.
-  void _showNotice(RegistrationNotice notice, AppLocalizations l10n) {
+  void _showNotice(
+    RegistrationNotice notice,
+    AppLocalizations l10n, {
+    String? apiMessage,
+  }) {
     final isFailure =
         notice == RegistrationNotice.assignmentAddFailed ||
         notice == RegistrationNotice.assignmentRemoveFailed;
-    final message = switch (notice) {
-      RegistrationNotice.assignmentAdded => l10n.assignmentAddedSuccessfully,
-      RegistrationNotice.assignmentRemoved =>
-        l10n.assignmentRemovedSuccessfully,
-      RegistrationNotice.assignmentAddFailed => l10n.assignmentAddFailure,
-      RegistrationNotice.assignmentRemoveFailed =>
-        l10n.assignmentRemovalFailure,
-    };
+    final message = isFailure && apiMessage?.isNotEmpty == true
+        ? apiMessage!
+        : switch (notice) {
+            RegistrationNotice.assignmentAdded =>
+              l10n.assignmentAddedSuccessfully,
+            RegistrationNotice.assignmentRemoved =>
+              l10n.assignmentRemovedSuccessfully,
+            RegistrationNotice.assignmentAddFailed => l10n.assignmentAddFailure,
+            RegistrationNotice.assignmentRemoveFailed =>
+              l10n.assignmentRemovalFailure,
+          };
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -465,76 +469,128 @@ class _AssignmentConfirmationDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
     final actionColor = widget.isRemove
         ? AppTheme.danger
         : AppTheme.primaryBlue;
+    final iconBackground = widget.isRemove
+        ? AppTheme.danger.withValues(alpha: 0.10)
+        : AppTheme.lightBlue;
 
     return PopScope(
       canPop: !_isLoading,
-      child: AlertDialog(
+      child: Dialog(
         key: const Key('assignment_confirmation_dialog'),
-        icon: Icon(
-          widget.isRemove ? Icons.link_off : Icons.add_link,
-          color: actionColor,
-        ),
-        title: Text(
-          widget.isRemove ? l10n.removeAssignment : l10n.assignDevice,
-          textAlign: TextAlign.center,
-        ),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                widget.isRemove
-                    ? l10n.removeDeviceAssignmentConfirmation
-                    : l10n.assignDeviceConfirmation,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _ConfirmationDetail(
-                label: l10n.tagNumber,
-                value: widget.tagNumber,
-              ),
-              const SizedBox(height: 10),
-              _ConfirmationDetail(
-                label: l10n.employeeId,
-                value: widget.employeeId,
-              ),
-            ],
-          ),
-        ),
-        actionsAlignment: MainAxisAlignment.spaceBetween,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-            child: Text(l10n.no),
-          ),
-          FilledButton(
-            key: const Key('confirm_assignment_action'),
-            onPressed: _isLoading ? null : _confirm,
-            style: FilledButton.styleFrom(
-              backgroundColor: actionColor,
-              foregroundColor: Colors.white,
-            ),
-            child: _isLoading
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 12,
+        shadowColor: Colors.black.withValues(alpha: 0.18),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: iconBackground,
+                      shape: BoxShape.circle,
                     ),
-                  )
-                : Text(l10n.yes),
+                    child: Icon(
+                      widget.isRemove
+                          ? Icons.person_remove_alt_1_rounded
+                          : Icons.add_link_rounded,
+                      color: actionColor,
+                      size: 34,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  widget.isRemove ? l10n.removeAssignment : l10n.assignDevice,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppTheme.darkBlue,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  widget.isRemove
+                      ? l10n.removeDeviceAssignmentConfirmation
+                      : l10n.assignDeviceConfirmation,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.mutedText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _ConfirmationInfoCard(
+                  tagLabel: l10n.tagNumber,
+                  tagNumber: widget.tagNumber,
+                  employeeLabel: l10n.employeeId,
+                  employeeId: widget.employeeId,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryBlue,
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(
+                            color: AppTheme.primaryBlue,
+                            width: 1.4,
+                          ),
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(l10n.no),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        key: const Key('confirm_assignment_action'),
+                        onPressed: _isLoading ? null : _confirm,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: actionColor,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(l10n.yes),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -552,46 +608,95 @@ class _AssignmentConfirmationDialogState
   }
 }
 
-/// Displays one identifier inside the shared confirmation dialog.
-class _ConfirmationDetail extends StatelessWidget {
-  const _ConfirmationDetail({required this.label, required this.value});
+/// Groups assignment identifiers in the dialog's information card.
+class _ConfirmationInfoCard extends StatelessWidget {
+  const _ConfirmationInfoCard({
+    required this.tagLabel,
+    required this.tagNumber,
+    required this.employeeLabel,
+    required this.employeeId,
+  });
 
+  final String tagLabel;
+  final String tagNumber;
+  final String employeeLabel;
+  final String employeeId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F9FC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5EAF2)),
+      ),
+      child: Column(
+        children: [
+          _ConfirmationInfoRow(
+            icon: Icons.sell_outlined,
+            label: tagLabel,
+            value: tagNumber,
+          ),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            indent: 54,
+            endIndent: 16,
+            color: Color(0xFFE5EAF2),
+          ),
+          _ConfirmationInfoRow(
+            icon: Icons.badge_outlined,
+            label: employeeLabel,
+            value: employeeId,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Displays one icon, label, and current value in the information card.
+class _ConfirmationInfoRow extends StatelessWidget {
+  const _ConfirmationInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      child: Row(
+        children: [
+          Icon(icon, color: AppTheme.primaryBlue, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.mutedText,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                value,
-                textAlign: TextAlign.end,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.darkBlue,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

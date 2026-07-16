@@ -1,37 +1,37 @@
-// Device data returned by the ITSM device lookup endpoint.
+// Device domain model mapped from documented iTop PhysicalDevice fields.
 
-/// Employee reference attached to a device through `contacts_list`.
+import 'itop_response.dart';
+
+/// Contact reference returned in a PhysicalDevice `contacts_list`.
 class DeviceContact {
-  const DeviceContact({required this.employeeNumber});
+  const DeviceContact({this.contactId = '', this.employeeNumber = ''});
 
-  /// Employee identifier used by the employee and assignment endpoints.
+  /// iTop Person key used to create and delete assignment links.
+  final String contactId;
+
+  /// Employee number resolved through the required second Person lookup.
   final String employeeNumber;
 
-  /// Safely maps common iTop contact shapes to a usable employee reference.
-  factory DeviceContact.fromDynamic(Object? value) {
-    if (value is String || value is num) {
-      return DeviceContact(employeeNumber: value.toString().trim());
-    }
+  /// Maps the documented contact row, which contains a contact ID but no employee number.
+  factory DeviceContact.fromJson(Map<String, dynamic> json) {
+    return DeviceContact(
+      contactId: _stringValue(json, const ['contact_id', 'contactId', 'id']),
+      employeeNumber: _stringValue(json, const [
+        'employee_number',
+        'employeeNumber',
+      ]),
+    );
+  }
 
-    if (value is Map) {
-      final json = Map<String, dynamic>.from(value);
-      return DeviceContact(
-        employeeNumber: _stringValue(json, const [
-          'employee_number',
-          'employeeNumber',
-          'employee_id',
-          'employeeId',
-          'number',
-          'id',
-        ]),
-      );
-    }
-
-    return const DeviceContact(employeeNumber: '');
+  DeviceContact copyWith({String? employeeNumber}) {
+    return DeviceContact(
+      contactId: contactId,
+      employeeNumber: employeeNumber ?? this.employeeNumber,
+    );
   }
 }
 
-/// Device details and current assignment references returned by the API.
+/// Physical device details used by registration and assignment workflows.
 class Device {
   const Device({
     required this.tagNumber,
@@ -40,104 +40,135 @@ class Device {
     required this.serialNumber,
     required this.status,
     required this.contacts,
+    this.itopKey = '',
+    this.itopClass = 'PhysicalDevice',
+    this.assetNumber = '',
+    this.model = '',
+    this.description = '',
   });
 
-  /// Asset tag used for manual lookup and barcode scanning.
+  /// iTop object key used by create, delete, and rename operations.
+  final String itopKey;
+
+  /// Concrete iTop class returned by search, such as `PC`.
+  final String itopClass;
+
+  /// Application Tag Number mapped exclusively from the iTop `name` field.
   final String tagNumber;
 
-  /// Manufacturer or brand returned by iTop.
+  /// Optional inventory number retained separately from Tag Number.
+  final String assetNumber;
+
+  /// Brand friendly name returned by iTop.
   final String brand;
 
-  /// Device category, such as laptop or desktop.
+  /// Concrete device class used by the existing Device Type UI.
   final String deviceType;
 
-  /// Hardware serial number required by assignment endpoints.
+  /// Model friendly name returned by iTop.
+  final String model;
+
   final String serialNumber;
-
-  /// Current device lifecycle status.
   final String status;
-
-  /// Contacts linked to this device.
+  final String description;
   final List<DeviceContact> contacts;
 
-  /// A device is assigned only when `contacts_list` has a usable employee.
   bool get isAssigned => assignedEmployeeNumber != null;
 
-  /// Returns the first valid employee identifier from the contact list.
   String? get assignedEmployeeNumber {
     for (final contact in contacts) {
-      final value = contact.employeeNumber.trim();
-      if (value.isNotEmpty) {
-        return value;
+      if (contact.employeeNumber.trim().isNotEmpty) {
+        return contact.employeeNumber.trim();
       }
     }
     return null;
   }
 
-  /// Parses API fields while accepting common snake_case and camelCase names.
-  factory Device.fromJson(Map<String, dynamic> json) {
+  String? get assignedContactId {
+    for (final contact in contacts) {
+      if (contact.contactId.trim().isNotEmpty) {
+        return contact.contactId.trim();
+      }
+    }
+    return null;
+  }
+
+  /// Maps a documented iTop object and optionally resolved contacts.
+  factory Device.fromItopObject(
+    ItopObject object, {
+    List<DeviceContact>? contacts,
+  }) {
+    final fields = object.fields;
     return Device(
-      tagNumber: _stringValue(json, const [
-        'tag_number',
-        'tagNumber',
-        'barcode',
-        'asset_tag',
-        'assetTag',
-      ]),
-      brand: _stringValue(json, const ['brand', 'manufacturer', 'vendor']),
-      deviceType: _stringValue(json, const [
-        'device_type',
-        'deviceType',
-        'type',
-        'class',
-      ]),
-      serialNumber: _stringValue(json, const [
-        'serial_number',
-        'serialNumber',
-        'serial',
-      ]),
-      status: _stringValue(json, const ['status', 'status_name', 'state']),
-      contacts: _parseContacts(
-        json['contacts_list'] ?? json['contactsList'] ?? json['contacts'],
-      ),
+      itopKey: object.key,
+      itopClass: object.className,
+      tagNumber: _stringValue(fields, const ['name']),
+      serialNumber: _stringValue(fields, const ['serialnumber']),
+      assetNumber: _stringValue(fields, const ['asset_number']),
+      status: _stringValue(fields, const ['status']),
+      brand: _stringValue(fields, const ['brand_id_friendlyname']),
+      model: _stringValue(fields, const ['model_id_friendlyname']),
+      description: _stringValue(fields, const ['description']),
+      deviceType: object.className,
+      contacts: contacts ?? _parseContacts(fields['contacts_list']),
     );
   }
 
-  /// Returns an updated device after assignment state changes locally.
-  Device copyWith({String? status, List<DeviceContact>? contacts}) {
+  /// Compatibility mapper that still gives `name` priority over legacy keys.
+  factory Device.fromJson(Map<String, dynamic> json) {
     return Device(
-      tagNumber: tagNumber,
+      itopKey: _stringValue(json, const ['key', 'id']),
+      itopClass: _stringValue(json, const ['class']),
+      tagNumber: _stringValue(json, const ['name', 'tag_number', 'tagNumber']),
+      serialNumber: _stringValue(json, const [
+        'serialnumber',
+        'serial_number',
+        'serialNumber',
+      ]),
+      assetNumber: _stringValue(json, const ['asset_number']),
+      status: _stringValue(json, const ['status']),
+      brand: _stringValue(json, const ['brand_id_friendlyname', 'brand']),
+      model: _stringValue(json, const ['model_id_friendlyname', 'model']),
+      description: _stringValue(json, const ['description']),
+      deviceType: _stringValue(json, const ['class', 'device_type', 'type']),
+      contacts: _parseContacts(json['contacts_list']),
+    );
+  }
+
+  Device copyWith({
+    String? tagNumber,
+    String? status,
+    List<DeviceContact>? contacts,
+  }) {
+    return Device(
+      itopKey: itopKey,
+      itopClass: itopClass,
+      tagNumber: tagNumber ?? this.tagNumber,
+      assetNumber: assetNumber,
       brand: brand,
       deviceType: deviceType,
+      model: model,
       serialNumber: serialNumber,
       status: status ?? this.status,
+      description: description,
       contacts: contacts ?? this.contacts,
     );
   }
 
-  /// A valid device must provide the identifiers needed by assignment calls.
-  bool get isValid =>
-      tagNumber.trim().isNotEmpty && serialNumber.trim().isNotEmpty;
+  bool get isValid => tagNumber.trim().isNotEmpty && itopKey.trim().isNotEmpty;
 }
 
-/// Converts nullable or malformed contact payloads into a safe list.
 List<DeviceContact> _parseContacts(Object? value) {
-  Object? contacts = value;
-  if (contacts is Map) {
-    contacts = contacts['items'] ?? contacts['values'] ?? contacts['data'];
-  }
-
-  if (contacts is! List) {
+  if (value is! List) {
     return const [];
   }
-
-  return contacts
-      .map(DeviceContact.fromDynamic)
-      .where((contact) => contact.employeeNumber.isNotEmpty)
+  return value
+      .whereType<Map>()
+      .map((item) => DeviceContact.fromJson(Map<String, dynamic>.from(item)))
+      .where((contact) => contact.contactId.isNotEmpty)
       .toList(growable: false);
 }
 
-/// Reads the first non-empty scalar value matching a known API key.
 String _stringValue(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {
     final value = json[key];

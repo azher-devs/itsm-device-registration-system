@@ -3,10 +3,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/itop_configuration.dart';
 import '../models/device.dart';
 import '../models/employee.dart';
 import '../repositories/device_registration_repository.dart';
 import '../services/device_registration_api_service.dart';
+import '../services/itop_api_client.dart';
 
 /// Current asynchronous operation shown by the registration screen.
 enum RegistrationOperation {
@@ -17,7 +19,7 @@ enum RegistrationOperation {
   removingAssignment,
 }
 
-/// One-time result communicated to the UI through a localized snackbar.
+/// One-time result communicated to the UI through a snackbar.
 enum RegistrationNotice {
   assignmentAdded,
   assignmentRemoved,
@@ -33,8 +35,11 @@ class DeviceRegistrationState {
     this.operation = RegistrationOperation.idle,
     this.tagError = false,
     this.tagTimedOut = false,
+    this.tagErrorMessage,
     this.employeeError = false,
+    this.employeeErrorMessage,
     this.notice,
+    this.noticeMessage,
     this.noticeVersion = 0,
   });
 
@@ -43,8 +48,11 @@ class DeviceRegistrationState {
   final RegistrationOperation operation;
   final bool tagError;
   final bool tagTimedOut;
+  final String? tagErrorMessage;
   final bool employeeError;
+  final String? employeeErrorMessage;
   final RegistrationNotice? notice;
+  final String? noticeMessage;
 
   /// Increments for every notice so repeated failures still reach listeners.
   final int noticeVersion;
@@ -60,7 +68,7 @@ class DeviceRegistrationState {
   bool get canRemove =>
       device?.isAssigned == true &&
       device!.serialNumber.isNotEmpty &&
-      device!.assignedEmployeeNumber != null &&
+      employee?.isValid == true &&
       !isBusy;
 
   DeviceRegistrationState copyWith({
@@ -69,12 +77,17 @@ class DeviceRegistrationState {
     RegistrationOperation? operation,
     bool? tagError,
     bool? tagTimedOut,
+    String? tagErrorMessage,
     bool? employeeError,
+    String? employeeErrorMessage,
     RegistrationNotice? notice,
+    String? noticeMessage,
     int? noticeVersion,
     bool clearDevice = false,
     bool clearEmployee = false,
     bool clearNotice = false,
+    bool clearTagErrorMessage = false,
+    bool clearEmployeeErrorMessage = false,
   }) {
     return DeviceRegistrationState(
       device: clearDevice ? null : device ?? this.device,
@@ -82,23 +95,30 @@ class DeviceRegistrationState {
       operation: operation ?? this.operation,
       tagError: tagError ?? this.tagError,
       tagTimedOut: tagTimedOut ?? this.tagTimedOut,
+      tagErrorMessage: clearTagErrorMessage
+          ? null
+          : tagErrorMessage ?? this.tagErrorMessage,
       employeeError: employeeError ?? this.employeeError,
+      employeeErrorMessage: clearEmployeeErrorMessage
+          ? null
+          : employeeErrorMessage ?? this.employeeErrorMessage,
       notice: clearNotice ? null : notice ?? this.notice,
+      noticeMessage: clearNotice ? null : noticeMessage ?? this.noticeMessage,
       noticeVersion: noticeVersion ?? this.noticeVersion,
     );
   }
 }
 
 /// Configures Dio without embedding transport concerns in the UI.
-final registrationDioProvider = Provider<Dio>((ref) {
-  const baseUrl = String.fromEnvironment(
-    'ITSM_API_BASE_URL',
-    defaultValue: 'http://localhost',
-  );
+final itopConfigurationProvider = Provider<ItopConfiguration>((ref) {
+  return ItopConfiguration.placeholder;
+});
 
+final registrationDioProvider = Provider<Dio>((ref) {
+  final config = ref.watch(itopConfigurationProvider);
   return Dio(
     BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: config.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
@@ -109,9 +129,12 @@ final registrationDioProvider = Provider<Dio>((ref) {
 /// Provides the replaceable repository used by the registration controller.
 final deviceRegistrationRepositoryProvider =
     Provider<DeviceRegistrationRepository>((ref) {
-      final service = DeviceRegistrationApiService(
-        ref.watch(registrationDioProvider),
+      final config = ref.watch(itopConfigurationProvider);
+      final client = ItopApiClient(
+        dio: ref.watch(registrationDioProvider),
+        config: config,
       );
+      final service = DeviceRegistrationApiService(client);
       return DioDeviceRegistrationRepository(service);
     });
 
@@ -147,6 +170,8 @@ class DeviceRegistrationController
       tagError: false,
       tagTimedOut: false,
       employeeError: false,
+      clearTagErrorMessage: true,
+      clearEmployeeErrorMessage: true,
       clearDevice: true,
       clearEmployee: true,
       clearNotice: true,
@@ -164,20 +189,22 @@ class DeviceRegistrationController
         await _loadAssignedEmployee(assignedEmployee);
       }
       return true;
-    } on RegistrationTimeoutException {
+    } on RegistrationTimeoutException catch (error) {
       state = state.copyWith(
         operation: RegistrationOperation.idle,
         tagError: true,
         tagTimedOut: true,
+        tagErrorMessage: error.message,
         clearDevice: true,
         clearEmployee: true,
       );
       return false;
-    } catch (_) {
+    } on RegistrationDataException catch (error) {
       state = state.copyWith(
         operation: RegistrationOperation.idle,
         tagError: true,
         tagTimedOut: false,
+        tagErrorMessage: error.message,
         clearDevice: true,
         clearEmployee: true,
       );
@@ -200,6 +227,7 @@ class DeviceRegistrationController
     state = state.copyWith(
       operation: RegistrationOperation.loadingEmployee,
       employeeError: false,
+      clearEmployeeErrorMessage: true,
       clearEmployee: true,
       clearNotice: true,
     );
@@ -211,10 +239,19 @@ class DeviceRegistrationController
         operation: RegistrationOperation.idle,
       );
       return true;
-    } catch (_) {
+    } on RegistrationDataException catch (error) {
       state = state.copyWith(
         operation: RegistrationOperation.idle,
         employeeError: true,
+        employeeErrorMessage: error.message,
+        clearEmployee: true,
+      );
+      return false;
+    } on RegistrationTimeoutException catch (error) {
+      state = state.copyWith(
+        operation: RegistrationOperation.idle,
+        employeeError: true,
+        employeeErrorMessage: error.message,
         clearEmployee: true,
       );
       return false;
@@ -232,22 +269,34 @@ class DeviceRegistrationController
     state = state.copyWith(operation: RegistrationOperation.addingAssignment);
 
     try {
-      await _repository.addAssignment(
-        serialNumber: device.serialNumber,
-        employeeNumber: employee.employeeNumber,
-      );
+      await _repository.addAssignment(device: device, employee: employee);
       state = state.copyWith(
         device: device.copyWith(
           status: 'Assigned',
-          contacts: [DeviceContact(employeeNumber: employee.employeeNumber)],
+          contacts: [
+            DeviceContact(
+              contactId: employee.itopKey,
+              employeeNumber: employee.employeeNumber,
+            ),
+          ],
         ),
         operation: RegistrationOperation.idle,
       );
       _publishNotice(RegistrationNotice.assignmentAdded);
       return true;
-    } catch (_) {
+    } on RegistrationDataException catch (error) {
       state = state.copyWith(operation: RegistrationOperation.idle);
-      _publishNotice(RegistrationNotice.assignmentAddFailed);
+      _publishNotice(
+        RegistrationNotice.assignmentAddFailed,
+        message: error.message,
+      );
+      return false;
+    } on RegistrationTimeoutException catch (error) {
+      state = state.copyWith(operation: RegistrationOperation.idle);
+      _publishNotice(
+        RegistrationNotice.assignmentAddFailed,
+        message: error.message,
+      );
       return false;
     }
   }
@@ -259,14 +308,11 @@ class DeviceRegistrationController
     }
 
     final device = state.device!;
-    final employeeNumber = device.assignedEmployeeNumber!;
+    final employee = state.employee!;
     state = state.copyWith(operation: RegistrationOperation.removingAssignment);
 
     try {
-      await _repository.removeAssignment(
-        serialNumber: device.serialNumber,
-        employeeNumber: employeeNumber,
-      );
+      await _repository.removeAssignment(device: device, employee: employee);
       state = state.copyWith(
         device: device.copyWith(status: 'Not Assigned', contacts: const []),
         operation: RegistrationOperation.idle,
@@ -275,9 +321,19 @@ class DeviceRegistrationController
       );
       _publishNotice(RegistrationNotice.assignmentRemoved);
       return true;
-    } catch (_) {
+    } on RegistrationDataException catch (error) {
       state = state.copyWith(operation: RegistrationOperation.idle);
-      _publishNotice(RegistrationNotice.assignmentRemoveFailed);
+      _publishNotice(
+        RegistrationNotice.assignmentRemoveFailed,
+        message: error.message,
+      );
+      return false;
+    } on RegistrationTimeoutException catch (error) {
+      state = state.copyWith(operation: RegistrationOperation.idle);
+      _publishNotice(
+        RegistrationNotice.assignmentRemoveFailed,
+        message: error.message,
+      );
       return false;
     }
   }
@@ -285,14 +341,22 @@ class DeviceRegistrationController
   /// Clears tag validation feedback while users correct the input.
   void clearTagError() {
     if (state.tagError) {
-      state = state.copyWith(tagError: false, tagTimedOut: false);
+      state = state.copyWith(
+        tagError: false,
+        tagTimedOut: false,
+        clearTagErrorMessage: true,
+      );
     }
   }
 
   /// Clears stale employee details and validation when editable input changes.
   void employeeInputChanged() {
     if (!state.isBusy && state.device?.isAssigned != true) {
-      state = state.copyWith(employeeError: false, clearEmployee: true);
+      state = state.copyWith(
+        employeeError: false,
+        clearEmployee: true,
+        clearEmployeeErrorMessage: true,
+      );
     }
   }
 
@@ -305,16 +369,26 @@ class DeviceRegistrationController
         employee: employee,
         operation: RegistrationOperation.idle,
       );
-    } catch (_) {
-      // Assignment remains visible even if its optional employee detail call fails.
-      state = state.copyWith(operation: RegistrationOperation.idle);
+    } on RegistrationDataException catch (error) {
+      state = state.copyWith(
+        operation: RegistrationOperation.idle,
+        employeeError: true,
+        employeeErrorMessage: error.message,
+      );
+    } on RegistrationTimeoutException catch (error) {
+      state = state.copyWith(
+        operation: RegistrationOperation.idle,
+        employeeError: true,
+        employeeErrorMessage: error.message,
+      );
     }
   }
 
-  /// Publishes a one-time localized UI notice without storing visible strings.
-  void _publishNotice(RegistrationNotice notice) {
+  /// Publishes a one-time notice and preserves any API-provided error message.
+  void _publishNotice(RegistrationNotice notice, {String? message}) {
     state = state.copyWith(
       notice: notice,
+      noticeMessage: message,
       noticeVersion: state.noticeVersion + 1,
     );
   }

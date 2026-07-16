@@ -1,48 +1,107 @@
-// Unit tests for resilient device and employee API payload mapping.
+// Unit tests for documented iTop response and domain model mapping.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:itsm_device_registration_system/models/device.dart';
 import 'package:itsm_device_registration_system/models/employee.dart';
+import 'package:itsm_device_registration_system/models/itop_response.dart';
 
 void main() {
-  test('empty or malformed contacts are treated as unassigned', () {
-    final missing = Device.fromJson({
-      'barcode': 'TAG-1',
-      'serial_number': 'SN-1',
-    });
-    final malformed = Device.fromJson({
-      'barcode': 'TAG-2',
-      'serial_number': 'SN-2',
-      'contacts_list': {'unexpected': true},
+  test('iTop response maps its common code message and objects envelope', () {
+    final response = ItopResponse.fromJson({
+      'code': 0,
+      'message': 'Found: 1',
+      'objects': {
+        'PC::1603': {
+          'code': 0,
+          'message': '',
+          'class': 'PC',
+          'key': '1603',
+          'fields': {'name': '2015020005'},
+        },
+      },
     });
 
-    expect(missing.isAssigned, isFalse);
-    expect(malformed.isAssigned, isFalse);
+    expect(response.isSuccess, isTrue);
+    expect(response.message, 'Found: 1');
+    expect(response.firstObject?.className, 'PC');
+    expect(response.firstObject?.key, '1603');
   });
 
-  test('contacts list employee number marks a device assigned', () {
-    final device = Device.fromJson({
-      'tag_number': 'TAG-ASSIGNED',
-      'serial_number': 'SN-ASSIGNED',
-      'contacts_list': [
-        {'employee_number': 'EMP-10045'},
+  test('Tag Number maps from name and never from asset_number', () {
+    const object = ItopObject(
+      code: 0,
+      message: '',
+      className: 'PC',
+      key: '1603',
+      fields: {
+        'name': '2015020005',
+        'asset_number': 'AST-104',
+        'serialnumber': 'SN-FG9942',
+        'brand_id_friendlyname': 'Fujitsu',
+        'model_id_friendlyname': 'Esprimo',
+        'status': 'production',
+      },
+    );
+
+    final device = Device.fromItopObject(object);
+
+    expect(device.tagNumber, '2015020005');
+    expect(device.assetNumber, 'AST-104');
+    expect(device.tagNumber, isNot(device.assetNumber));
+  });
+
+  test('contacts require resolved employee number before assignment', () {
+    const object = ItopObject(
+      code: 0,
+      message: '',
+      className: 'PC',
+      key: '1603',
+      fields: {
+        'name': '2015020005',
+        'contacts_list': [
+          {'contact_id': '10064'},
+        ],
+      },
+    );
+
+    final unresolved = Device.fromItopObject(object);
+    final resolved = Device.fromItopObject(
+      object,
+      contacts: const [
+        DeviceContact(contactId: '10064', employeeNumber: 'EMP8842'),
       ],
-    });
+    );
 
-    expect(device.isAssigned, isTrue);
-    expect(device.assignedEmployeeNumber, 'EMP-10045');
+    expect(unresolved.isAssigned, isFalse);
+    expect(unresolved.assignedContactId, '10064');
+    expect(resolved.isAssigned, isTrue);
+    expect(resolved.assignedEmployeeNumber, 'EMP8842');
   });
 
-  test('employee mapper accepts API field variants and missing optionals', () {
-    final employee = Employee.fromJson({
-      'employee_id': 'EMP-10045',
-      'friendlyname': 'Ahmed Al Balushi',
-      'department': 'IT',
-    });
+  test('Person fields map to employee profile', () {
+    const object = ItopObject(
+      code: 0,
+      message: '',
+      className: 'Person',
+      key: '10064',
+      fields: {
+        'first_name': 'Olaa',
+        'name': 'Al',
+        'email': 'o.al@company.com',
+        'org_id_friendlyname': 'IT Department',
+        'phone': '+9681234567',
+        'status': 'active',
+        'function': 'Systems Analyst',
+        'employee_number': 'EMP8842',
+      },
+    );
+
+    final employee = Employee.fromItopObject(object);
 
     expect(employee.isValid, isTrue);
-    expect(employee.fullName, 'Ahmed Al Balushi');
-    expect(employee.organization, 'IT');
-    expect(employee.phone, isEmpty);
+    expect(employee.itopKey, '10064');
+    expect(employee.fullName, 'Olaa Al');
+    expect(employee.organization, 'IT Department');
+    expect(employee.employeeNumber, 'EMP8842');
   });
 }

@@ -88,37 +88,66 @@ void main() {
   });
 
   test('demo assignment state persists until repository restart', () async {
-    await repository.addAssignment(
-      serialNumber: 'SN-UNASSIGNED',
-      employeeNumber: 'EMP-10045',
-    );
+    final device = await repository.getDevice('TAG-UNASSIGNED');
+    final employee = await repository.getEmployee('EMP-10045');
+    await repository.addAssignment(device: device, employee: employee);
     expect((await repository.getDevice('TAG-UNASSIGNED')).isAssigned, isTrue);
 
     await repository.removeAssignment(
-      serialNumber: 'SN-UNASSIGNED',
-      employeeNumber: 'EMP-10045',
+      device: await repository.getDevice('TAG-UNASSIGNED'),
+      employee: employee,
     );
     expect((await repository.getDevice('TAG-UNASSIGNED')).isAssigned, isFalse);
   });
 
   test('demo failure devices preserve their assignment states', () async {
+    final employee = await repository.getEmployee('EMP-10045');
     await expectLater(
       repository.addAssignment(
-        serialNumber: 'SN-ADD-FAIL',
-        employeeNumber: 'EMP-10045',
+        device: await repository.getDevice('TAG-ADD-FAIL'),
+        employee: employee,
       ),
-      throwsA(isA<RegistrationDataException>()),
+      throwsA(
+        isA<RegistrationDataException>().having(
+          (error) => error.message,
+          'message',
+          DemoDeviceRegistrationRepository.addFailureMessage,
+        ),
+      ),
     );
     await expectLater(
       repository.removeAssignment(
-        serialNumber: 'SN-REMOVE-FAIL',
-        employeeNumber: 'EMP-10045',
+        device: await repository.getDevice('TAG-REMOVE-FAIL'),
+        employee: employee,
       ),
-      throwsA(isA<RegistrationDataException>()),
+      throwsA(
+        isA<RegistrationDataException>().having(
+          (error) => error.message,
+          'message',
+          DemoDeviceRegistrationRepository.removeFailureMessage,
+        ),
+      ),
     );
 
     expect((await repository.getDevice('TAG-ADD-FAIL')).isAssigned, isFalse);
     expect((await repository.getDevice('TAG-REMOVE-FAIL')).isAssigned, isTrue);
+  });
+
+  test('demo rename changes the searchable iTop name field', () async {
+    final device = await repository.getDevice('TAG-SECOND');
+
+    expect(
+      await repository.renameDevice(device: device, newName: 'TAG-RENAMED'),
+      'Object updated',
+    );
+    expect(
+      (await repository.getDevice('TAG-RENAMED')).tagNumber,
+      'TAG-RENAMED',
+    );
+    await expectLater(
+      repository.getDevice('TAG-SECOND'),
+      throwsA(isA<RegistrationDataException>()),
+    );
   });
 
   test('demo not-found and timeout scenarios return handled errors', () async {
@@ -173,7 +202,7 @@ void main() {
 
       await searchDevice(tester, 'TAG-NOT-FOUND');
       expect(
-        find.text('Device not found. Check the tag number and try again.'),
+        find.text(DemoDeviceRegistrationRepository.notFoundMessage),
         findsOneWidget,
       );
       expect(find.text('SN-UNASSIGNED'), findsNothing);
@@ -195,21 +224,21 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Employee not found. Check the employee ID and try again.'),
+        find.text(DemoDeviceRegistrationRepository.notFoundMessage),
         findsOneWidget,
       );
       expect(find.text('SN-UNASSIGNED'), findsWidgets);
       expect(find.byKey(const Key('add_assignment_button')), findsNothing);
     });
 
-    testWidgets('TAG-TIMEOUT displays a localized timeout error', (
+    testWidgets('TAG-TIMEOUT displays the Fake API timeout error', (
       tester,
     ) async {
       await pumpScreen(tester);
       await searchDevice(tester, 'TAG-TIMEOUT');
 
       expect(
-        find.text('Device lookup timed out. Please try again.'),
+        find.text(DemoDeviceRegistrationRepository.timeoutMessage),
         findsOneWidget,
       );
       expect(find.byKey(const Key('add_assignment_button')), findsNothing);

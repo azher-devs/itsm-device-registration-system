@@ -42,9 +42,16 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
   static const String timeoutTag = 'TAG-TIMEOUT';
   static const String notFoundTag = 'TAG-NOT-FOUND';
   static const String invalidEmployeeNumber = 'EMP-NOT-FOUND';
+  static const String notFoundMessage = 'Found: 0';
+  static const String addFailureMessage = 'Unable to create assignment';
+  static const String removeFailureMessage = 'Unable to delete assignment';
+  static const String timeoutMessage = 'Connection timed out';
 
   static const Employee _employee = Employee(
+    itopKey: '10064',
     employeeNumber: validEmployeeNumber,
+    firstName: 'Ahmed',
+    lastName: 'Al Balushi',
     fullName: 'Ahmed Al Balushi',
     email: 'ahmed@example.com',
     organization: 'Information Technology',
@@ -58,13 +65,13 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
     final tag = barcode.trim().toUpperCase();
     if (tag == timeoutTag) {
       await Future<void>.delayed(delays.timeout);
-      throw const RegistrationTimeoutException();
+      throw const RegistrationTimeoutException(timeoutMessage);
     }
 
     await Future<void>.delayed(delays.deviceSearch);
     final device = _devices[tag];
     if (device == null) {
-      throw const RegistrationDataException('Demo device not found.');
+      throw const RegistrationDataException(notFoundMessage);
     }
     return device;
   }
@@ -73,55 +80,74 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
   Future<Employee> getEmployee(String employeeNumber) async {
     await Future<void>.delayed(delays.employeeSearch);
     if (employeeNumber.trim().toUpperCase() != validEmployeeNumber) {
-      throw const RegistrationDataException('Demo employee not found.');
+      throw const RegistrationDataException(notFoundMessage);
     }
     return _employee;
   }
 
   @override
-  Future<void> addAssignment({
-    required String serialNumber,
-    required String employeeNumber,
+  Future<String> addAssignment({
+    required Device device,
+    required Employee employee,
   }) async {
     await Future<void>.delayed(delays.addAssignment);
-    final entry = _findBySerialNumber(serialNumber);
-    if (entry == null || employeeNumber != validEmployeeNumber) {
-      throw const RegistrationDataException('Invalid demo assignment.');
+    final entry = _findByItopKey(device.itopKey);
+    if (entry == null || employee.itopKey != _employee.itopKey) {
+      throw const RegistrationDataException('Invalid assignment data');
     }
     if (entry.value.tagNumber == 'TAG-ADD-FAIL') {
-      throw const RegistrationDataException('Simulated add failure.');
+      throw const RegistrationDataException(addFailureMessage);
     }
 
     _devices[entry.key] = entry.value.copyWith(
       status: 'Assigned',
-      contacts: const [DeviceContact(employeeNumber: validEmployeeNumber)],
+      contacts: const [
+        DeviceContact(contactId: '10064', employeeNumber: validEmployeeNumber),
+      ],
     );
+    return 'Object created';
   }
 
   @override
-  Future<void> removeAssignment({
-    required String serialNumber,
-    required String employeeNumber,
+  Future<String> removeAssignment({
+    required Device device,
+    required Employee employee,
   }) async {
     await Future<void>.delayed(delays.removeAssignment);
-    final entry = _findBySerialNumber(serialNumber);
-    if (entry == null || employeeNumber != validEmployeeNumber) {
-      throw const RegistrationDataException('Invalid demo removal.');
+    final entry = _findByItopKey(device.itopKey);
+    if (entry == null || employee.itopKey != _employee.itopKey) {
+      throw const RegistrationDataException('Invalid assignment data');
     }
     if (entry.value.tagNumber == 'TAG-REMOVE-FAIL') {
-      throw const RegistrationDataException('Simulated remove failure.');
+      throw const RegistrationDataException(removeFailureMessage);
     }
 
     _devices[entry.key] = entry.value.copyWith(
       status: 'Not Assigned',
       contacts: const [],
     );
+    return 'Objects deleted';
   }
 
-  /// Finds mutable device storage by the serial number used for assignments.
-  MapEntry<String, Device>? _findBySerialNumber(String serialNumber) {
+  @override
+  Future<String> renameDevice({
+    required Device device,
+    required String newName,
+  }) async {
+    await Future<void>.delayed(delays.deviceSearch);
+    final entry = _findByItopKey(device.itopKey);
+    if (entry == null) {
+      throw const RegistrationDataException(notFoundMessage);
+    }
+    final renamed = _devices.remove(entry.key)!.copyWith(tagNumber: newName);
+    _devices[newName.toUpperCase()] = renamed;
+    return 'Object updated';
+  }
+
+  /// Finds a mutable demo device using the iTop object key.
+  MapEntry<String, Device>? _findByItopKey(String itopKey) {
     for (final entry in _devices.entries) {
-      if (entry.value.serialNumber == serialNumber) {
+      if (entry.value.itopKey == itopKey) {
         return entry;
       }
     }
@@ -132,6 +158,8 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
   static Map<String, Device> _createDevices() {
     return {
       'TAG-UNASSIGNED': const Device(
+        itopKey: '1603',
+        itopClass: 'PC',
         tagNumber: 'TAG-UNASSIGNED',
         brand: 'Dell',
         deviceType: 'Laptop',
@@ -140,14 +168,23 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
         contacts: [],
       ),
       'TAG-ASSIGNED': const Device(
+        itopKey: '1604',
+        itopClass: 'PC',
         tagNumber: 'TAG-ASSIGNED',
         brand: 'HP',
         deviceType: 'Desktop',
         serialNumber: 'SN-ASSIGNED',
         status: 'Assigned',
-        contacts: [DeviceContact(employeeNumber: validEmployeeNumber)],
+        contacts: [
+          DeviceContact(
+            contactId: '10064',
+            employeeNumber: validEmployeeNumber,
+          ),
+        ],
       ),
       'TAG-SECOND': const Device(
+        itopKey: '1605',
+        itopClass: 'Tablet',
         tagNumber: 'TAG-SECOND',
         brand: 'Lenovo',
         deviceType: 'Tablet',
@@ -156,6 +193,8 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
         contacts: [],
       ),
       'TAG-ADD-FAIL': const Device(
+        itopKey: '1606',
+        itopClass: 'PC',
         tagNumber: 'TAG-ADD-FAIL',
         brand: 'Acer',
         deviceType: 'Laptop',
@@ -164,12 +203,19 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
         contacts: [],
       ),
       'TAG-REMOVE-FAIL': const Device(
+        itopKey: '1607',
+        itopClass: 'PC',
         tagNumber: 'TAG-REMOVE-FAIL',
         brand: 'Apple',
         deviceType: 'Desktop',
         serialNumber: 'SN-REMOVE-FAIL',
         status: 'Assigned',
-        contacts: [DeviceContact(employeeNumber: validEmployeeNumber)],
+        contacts: [
+          DeviceContact(
+            contactId: '10064',
+            employeeNumber: validEmployeeNumber,
+          ),
+        ],
       ),
     };
   }

@@ -12,6 +12,7 @@ import 'package:itsm_device_registration_system/repositories/device_registration
 import 'package:itsm_device_registration_system/views/registration/device_registration_screen.dart';
 
 const employee = Employee(
+  itopKey: '10064',
   employeeNumber: 'EMP-10045',
   fullName: 'Ahmed Al Balushi',
   email: 'ahmed@example.com',
@@ -22,6 +23,8 @@ const employee = Employee(
 );
 
 const unassignedDevice = Device(
+  itopKey: '1603',
+  itopClass: 'PC',
   tagNumber: 'TAG-UNASSIGNED',
   brand: 'Dell',
   deviceType: 'Laptop',
@@ -31,15 +34,19 @@ const unassignedDevice = Device(
 );
 
 const assignedDevice = Device(
+  itopKey: '1604',
+  itopClass: 'PC',
   tagNumber: 'TAG-ASSIGNED',
   brand: 'HP',
   deviceType: 'Desktop',
   serialNumber: 'SN-ASSIGNED',
   status: 'In Service',
-  contacts: [DeviceContact(employeeNumber: 'EMP-10045')],
+  contacts: [DeviceContact(contactId: '10064', employeeNumber: 'EMP-10045')],
 );
 
 const secondDevice = Device(
+  itopKey: '1605',
+  itopClass: 'Tablet',
   tagNumber: 'TAG-SECOND',
   brand: 'Lenovo',
   deviceType: 'Tablet',
@@ -81,25 +88,35 @@ class FakeRegistrationRepository implements DeviceRegistrationRepository {
   }
 
   @override
-  Future<void> addAssignment({
-    required String serialNumber,
-    required String employeeNumber,
+  Future<String> addAssignment({
+    required Device device,
+    required Employee employee,
   }) async {
     addCalls++;
     if (failAdd) {
-      throw Exception('Add failed');
+      throw const RegistrationDataException('API add failed');
     }
+    return 'Object created';
   }
 
   @override
-  Future<void> removeAssignment({
-    required String serialNumber,
-    required String employeeNumber,
+  Future<String> removeAssignment({
+    required Device device,
+    required Employee employee,
   }) async {
     removeCalls++;
     if (failRemove) {
-      throw Exception('Remove failed');
+      throw const RegistrationDataException('API remove failed');
     }
+    return 'Objects deleted';
+  }
+
+  @override
+  Future<String> renameDevice({
+    required Device device,
+    required String newName,
+  }) async {
+    return 'Object updated';
   }
 }
 
@@ -285,10 +302,7 @@ void main() {
     expect(find.byKey(const Key('add_assignment_button')), findsOneWidget);
     expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
     expect(find.text(employee.fullName), findsOneWidget);
-    expect(
-      find.text('Unable to add the assignment. Please try again.'),
-      findsOneWidget,
-    );
+    expect(find.text('API add failed'), findsOneWidget);
     expect(
       find.text('The device has been assigned successfully.'),
       findsNothing,
@@ -399,10 +413,7 @@ void main() {
 
     expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
     expect(find.text(employee.fullName), findsOneWidget);
-    expect(
-      find.text('Unable to remove the assignment. Please try again.'),
-      findsOneWidget,
-    );
+    expect(find.text('API remove failed'), findsOneWidget);
     expect(
       find.text('Employee removed from the device successfully.'),
       findsNothing,
