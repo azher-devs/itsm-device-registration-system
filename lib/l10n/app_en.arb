@@ -51,7 +51,7 @@
   "employeeInformationEmpty": "Employee information will appear after ID validation.",
   "employeeName": "Employee Name",
   "email": "Email",
-  "organization": "Organization / Department",
+  "organization": "Organization",
   "phone": "Phone",
   "jobTitle": "Function / Job Title",
   "assignedEmployee": "Assigned employee",

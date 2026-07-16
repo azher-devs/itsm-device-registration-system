@@ -165,7 +165,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get email => 'البريد الإلكتروني';
 
   @override
-  String get organization => 'المؤسسة / القسم';
+  String get organization => 'المؤسسة';
 
   @override
   String get phone => 'الهاتف';

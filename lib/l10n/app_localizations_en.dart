@@ -165,7 +165,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get email => 'Email';
 
   @override
-  String get organization => 'Organization / Department';
+  String get organization => 'Organization';
 
   @override
   String get phone => 'Phone';

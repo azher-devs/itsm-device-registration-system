@@ -51,7 +51,7 @@
   "employeeInformationEmpty": "ستظهر معلومات الموظف بعد التحقق من الرقم الوظيفي.",
   "employeeName": "اسم الموظف",
   "email": "البريد الإلكتروني",
-  "organization": "المؤسسة / القسم",
+  "organization": "المؤسسة",
   "phone": "الهاتف",
   "jobTitle": "المسمى الوظيفي",
   "assignedEmployee": "الموظف المخصص",

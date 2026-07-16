@@ -407,7 +407,7 @@ abstract class AppLocalizations {
   /// No description provided for @organization.
   ///
   /// In en, this message translates to:
-  /// **'Organization / Department'**
+  /// **'Organization'**
   String get organization;
 
   /// No description provided for @phone.
