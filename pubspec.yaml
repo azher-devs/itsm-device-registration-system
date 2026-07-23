@@ -39,8 +39,11 @@ dependencies:
   shared_preferences: ^2.5.3
   camera: ^0.12.0+1
   google_mlkit_barcode_scanning: ^0.14.2
+  image_picker: ^1.2.3
+  permission_handler: ^12.0.3
   flutter_riverpod: 2.6.1
   dio: 5.8.0+1
+  audioplayers: ^6.7.1
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +70,7 @@ flutter:
 
   assets:
     - assets/logo/itop-logo-external.png
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

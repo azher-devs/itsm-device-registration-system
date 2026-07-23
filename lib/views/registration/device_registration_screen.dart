@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/device.dart';
 import '../../models/employee.dart';
+import '../../shared/widgets/copyable_field_suffix.dart';
 import '../../shared/widgets/info_card.dart';
 import '../../shared/widgets/itsm_text_field.dart';
 import '../../shared/widgets/keyboard_dismiss_area.dart';
@@ -145,14 +146,20 @@ class _DeviceRegistrationScreenState
                   label: l10n.tagNumber,
                   hint: l10n.enterOrSearchTagNumber,
                   controller: _tagController,
-                  suffixIcon:
-                      state.operation == RegistrationOperation.loadingDevice
-                      ? const _FieldLoadingIndicator()
-                      : IconButton(
-                          tooltip: l10n.searchTagNumber,
-                          icon: const Icon(Icons.search),
-                          onPressed: state.isBusy ? null : _searchTagNumber,
-                        ),
+                  suffixIcon: CopyableFieldSuffix(
+                    controller: _tagController,
+                    copyTooltip: l10n.copy,
+                    copiedMessage: l10n.tagNumberCopied,
+                    copyButtonKey: const Key('copy_tag_number'),
+                    trailingAction:
+                        state.operation == RegistrationOperation.loadingDevice
+                        ? const _FieldLoadingIndicator()
+                        : IconButton(
+                            tooltip: l10n.searchTagNumber,
+                            icon: const Icon(Icons.search),
+                            onPressed: state.isBusy ? null : _searchTagNumber,
+                          ),
+                  ),
                   errorText: state.tagError
                       ? state.tagErrorMessage ??
                             (state.tagTimedOut
@@ -172,6 +179,12 @@ class _DeviceRegistrationScreenState
                   hint: l10n.serialNumberFromDevice,
                   controller: _serialController,
                   readOnly: true,
+                  suffixIcon: CopyableFieldSuffix(
+                    controller: _serialController,
+                    copyTooltip: l10n.copy,
+                    copiedMessage: l10n.serialNumberCopied,
+                    copyButtonKey: const Key('copy_serial_number'),
+                  ),
                 ),
                 const _SectionDivider(),
                 ItsmTextField(
@@ -182,19 +195,25 @@ class _DeviceRegistrationScreenState
                       : l10n.enterEmployeeId,
                   controller: _employeeController,
                   readOnly: state.device?.isAssigned == true,
-                  suffixIcon:
-                      state.operation == RegistrationOperation.loadingEmployee
-                      ? const _FieldLoadingIndicator()
-                      : IconButton(
-                          tooltip: l10n.searchEmployeeId,
-                          icon: const Icon(Icons.search),
-                          onPressed:
-                              state.device != null &&
-                                  !state.device!.isAssigned &&
-                                  !state.isBusy
-                              ? _searchEmployeeId
-                              : null,
-                        ),
+                  suffixIcon: CopyableFieldSuffix(
+                    controller: _employeeController,
+                    copyTooltip: l10n.copy,
+                    copiedMessage: l10n.employeeIdCopied,
+                    copyButtonKey: const Key('copy_employee_id'),
+                    trailingAction:
+                        state.operation == RegistrationOperation.loadingEmployee
+                        ? const _FieldLoadingIndicator()
+                        : IconButton(
+                            tooltip: l10n.searchEmployeeId,
+                            icon: const Icon(Icons.search),
+                            onPressed:
+                                state.device != null &&
+                                    !state.device!.isAssigned &&
+                                    !state.isBusy
+                                ? _searchEmployeeId
+                                : null,
+                          ),
+                  ),
                   errorText: state.employeeError
                       ? state.employeeErrorMessage ?? l10n.invalidEmployeeId
                       : null,

@@ -1,9 +1,11 @@
 // Riverpod state and controller for device assignment workflows.
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/itop_configuration.dart';
+import '../core/services/audio_service.dart';
 import '../models/device.dart';
 import '../models/employee.dart';
 import '../repositories/device_registration_repository.dart';
@@ -17,6 +19,7 @@ enum RegistrationOperation {
   loadingEmployee,
   addingAssignment,
   removingAssignment,
+  renamingDevice,
 }
 
 /// One-time result communicated to the UI through a snackbar.
@@ -114,9 +117,12 @@ final itopConfigurationProvider = Provider<ItopConfiguration>((ref) {
   return ItopConfiguration.placeholder;
 });
 
+/// Keeps verbose HTTP logging disabled unless the demo entry point enables it.
+final demoDioLoggingEnabledProvider = Provider<bool>((ref) => false);
+
 final registrationDioProvider = Provider<Dio>((ref) {
   final config = ref.watch(itopConfigurationProvider);
-  return Dio(
+  final dio = Dio(
     BaseOptions(
       baseUrl: config.baseUrl,
       connectTimeout: const Duration(seconds: 15),
@@ -124,6 +130,30 @@ final registrationDioProvider = Provider<Dio>((ref) {
       sendTimeout: const Duration(seconds: 15),
     ),
   );
+
+  // Release builds stay silent even if the demo entry point is selected.
+  if (kDebugMode && ref.watch(demoDioLoggingEnabledProvider)) {
+    dio.interceptors.add(
+      LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+        logPrint: (message) => debugPrint(message.toString()),
+      ),
+    );
+  }
+
+  return dio;
+});
+
+/// Provides one reusable audio player for successful application operations.
+final successAudioPlayerProvider = Provider<SuccessAudioPlayer>((ref) {
+  final service = AudioService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 /// Provides the replaceable repository used by the registration controller.
@@ -146,16 +176,21 @@ final deviceRegistrationControllerProvider =
     >((ref) {
       return DeviceRegistrationController(
         ref.watch(deviceRegistrationRepositoryProvider),
+        successAudioPlayer: ref.watch(successAudioPlayerProvider),
       );
     });
 
 /// Coordinates UI state with repository calls and guards duplicate actions.
 class DeviceRegistrationController
     extends StateNotifier<DeviceRegistrationState> {
-  DeviceRegistrationController(this._repository)
-    : super(const DeviceRegistrationState());
+  DeviceRegistrationController(
+    this._repository, {
+    SuccessAudioPlayer? successAudioPlayer,
+  }) : _successAudioPlayer = successAudioPlayer,
+       super(const DeviceRegistrationState());
 
   final DeviceRegistrationRepository _repository;
+  final SuccessAudioPlayer? _successAudioPlayer;
 
   /// Loads a device and its assigned employee, clearing all stale employee data.
   Future<bool> searchDevice(String rawTag) async {
@@ -184,9 +219,9 @@ class DeviceRegistrationController
         operation: RegistrationOperation.idle,
       );
 
-      final assignedEmployee = device.assignedEmployeeNumber;
-      if (assignedEmployee != null) {
-        await _loadAssignedEmployee(assignedEmployee);
+      final assignedContactId = device.assignedContactId;
+      if (assignedContactId != null) {
+        await _loadAssignedEmployeeByContactId(assignedContactId);
       }
       return true;
     } on RegistrationTimeoutException catch (error) {
@@ -282,6 +317,7 @@ class DeviceRegistrationController
         ),
         operation: RegistrationOperation.idle,
       );
+      await _successAudioPlayer?.playSuccess();
       _publishNotice(RegistrationNotice.assignmentAdded);
       return true;
     } on RegistrationDataException catch (error) {
@@ -319,6 +355,7 @@ class DeviceRegistrationController
         employeeError: false,
         clearEmployee: true,
       );
+      await _successAudioPlayer?.playSuccess();
       _publishNotice(RegistrationNotice.assignmentRemoved);
       return true;
     } on RegistrationDataException catch (error) {
@@ -333,6 +370,48 @@ class DeviceRegistrationController
       _publishNotice(
         RegistrationNotice.assignmentRemoveFailed,
         message: error.message,
+      );
+      return false;
+    }
+  }
+
+  /// Renames the selected iTop device while preserving its loaded details.
+  Future<bool> renameDevice(String rawName) async {
+    final newName = rawName.trim();
+    final device = state.device;
+    if (newName.isEmpty || device == null || state.isBusy) {
+      return false;
+    }
+
+    state = state.copyWith(
+      operation: RegistrationOperation.renamingDevice,
+      tagError: false,
+      tagTimedOut: false,
+      clearTagErrorMessage: true,
+      clearNotice: true,
+    );
+
+    try {
+      await _repository.renameDevice(device: device, newName: newName);
+      state = state.copyWith(
+        device: device.copyWith(tagNumber: newName),
+        operation: RegistrationOperation.idle,
+      );
+      return true;
+    } on RegistrationTimeoutException catch (error) {
+      state = state.copyWith(
+        operation: RegistrationOperation.idle,
+        tagError: true,
+        tagTimedOut: true,
+        tagErrorMessage: error.message,
+      );
+      return false;
+    } on RegistrationDataException catch (error) {
+      state = state.copyWith(
+        operation: RegistrationOperation.idle,
+        tagError: true,
+        tagTimedOut: false,
+        tagErrorMessage: error.message,
       );
       return false;
     }
@@ -360,11 +439,11 @@ class DeviceRegistrationController
     }
   }
 
-  /// Fetches full details for the employee referenced by `contacts_list`.
-  Future<void> _loadAssignedEmployee(String employeeNumber) async {
+  /// Resolves the Person profile referenced by a device `contacts_list` row.
+  Future<void> _loadAssignedEmployeeByContactId(String contactId) async {
     state = state.copyWith(operation: RegistrationOperation.loadingEmployee);
     try {
-      final employee = await _repository.getEmployee(employeeNumber);
+      final employee = await _repository.getEmployeeByContactId(contactId);
       state = state.copyWith(
         employee: employee,
         operation: RegistrationOperation.idle,

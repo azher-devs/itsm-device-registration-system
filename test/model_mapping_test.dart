@@ -50,33 +50,36 @@ void main() {
     expect(device.tagNumber, isNot(device.assetNumber));
   });
 
-  test('contacts require resolved employee number before assignment', () {
-    const object = ItopObject(
-      code: 0,
-      message: '',
-      className: 'PC',
-      key: '1603',
-      fields: {
-        'name': '2015020005',
-        'contacts_list': [
-          {'contact_id': '10064'},
+  test(
+    'contacts_list presence determines assignment before profile lookup',
+    () {
+      const object = ItopObject(
+        code: 0,
+        message: '',
+        className: 'PC',
+        key: '1603',
+        fields: {
+          'name': '2015020005',
+          'contacts_list': [
+            {'contact_id': '10064'},
+          ],
+        },
+      );
+
+      final unresolved = Device.fromItopObject(object);
+      final resolved = Device.fromItopObject(
+        object,
+        contacts: const [
+          DeviceContact(contactId: '10064', employeeNumber: 'EMP8842'),
         ],
-      },
-    );
+      );
 
-    final unresolved = Device.fromItopObject(object);
-    final resolved = Device.fromItopObject(
-      object,
-      contacts: const [
-        DeviceContact(contactId: '10064', employeeNumber: 'EMP8842'),
-      ],
-    );
-
-    expect(unresolved.isAssigned, isFalse);
-    expect(unresolved.assignedContactId, '10064');
-    expect(resolved.isAssigned, isTrue);
-    expect(resolved.assignedEmployeeNumber, 'EMP8842');
-  });
+      expect(unresolved.isAssigned, isTrue);
+      expect(unresolved.assignedContactId, '10064');
+      expect(resolved.isAssigned, isTrue);
+      expect(resolved.assignedEmployeeNumber, 'EMP8842');
+    },
+  );
 
   test('Person fields map to employee profile', () {
     const object = ItopObject(
@@ -103,5 +106,31 @@ void main() {
     expect(employee.fullName, 'Olaa Al');
     expect(employee.organization, 'IT Department');
     expect(employee.employeeNumber, 'EMP8842');
+  });
+
+  test('missing and null optional fields map without throwing', () {
+    final response = ItopResponse.fromJson({
+      'code': 0,
+      'message': 'Found: 1',
+      'objects': {
+        'PC::1603': {
+          'code': 0,
+          'message': null,
+          'class': 'PC',
+          'key': 1603,
+          'fields': {
+            'name': '2015020005',
+            'serialnumber': null,
+            'contacts_list': null,
+          },
+        },
+      },
+    });
+
+    final device = Device.fromItopObject(response.firstObject!);
+
+    expect(device.isValid, isTrue);
+    expect(device.serialNumber, isEmpty);
+    expect(device.contacts, isEmpty);
   });
 }

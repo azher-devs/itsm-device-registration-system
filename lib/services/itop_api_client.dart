@@ -38,12 +38,7 @@ class ItopApiClient {
           'json_data': jsonEncode(instruction),
         }),
       );
-      if (response.data is! Map) {
-        throw const ItopClientException('Invalid iTop response.');
-      }
-      return ItopResponse.fromJson(
-        Map<String, dynamic>.from(response.data! as Map),
-      );
+      return ItopResponse.fromJson(_decodeResponse(response.data));
     } on DioException catch (error) {
       final apiMessage = _responseMessage(error.response?.data);
       final isTimeout =
@@ -54,12 +49,48 @@ class ItopApiClient {
         apiMessage ?? error.message ?? 'iTop request failed.',
         isTimeout: isTimeout,
       );
+    } on ItopClientException {
+      rethrow;
+    } on Object {
+      throw const ItopClientException('Invalid iTop response.');
     }
   }
 }
 
+/// Accepts decoded JSON maps and JSON strings returned by the HTTP transformer.
+Map<String, dynamic> _decodeResponse(Object? data) {
+  Object? decoded = data;
+  if (data is String) {
+    try {
+      decoded = jsonDecode(data);
+    } on FormatException {
+      throw const ItopClientException('Invalid iTop response.');
+    }
+  }
+
+  if (decoded is! Map ||
+      !decoded.containsKey('code') ||
+      !decoded.containsKey('message')) {
+    throw const ItopClientException('Invalid iTop response.');
+  }
+
+  final objects = decoded['objects'];
+  if (objects != null && objects is! Map) {
+    throw const ItopClientException('Invalid iTop response.');
+  }
+
+  return Map<String, dynamic>.from(decoded);
+}
+
 /// Extracts the exact server message from a failed Dio response when present.
 String? _responseMessage(Object? data) {
+  if (data is String) {
+    try {
+      return _responseMessage(jsonDecode(data));
+    } on FormatException {
+      return null;
+    }
+  }
   if (data is Map) {
     final message = data['message']?.toString();
     if (message != null && message.isNotEmpty) {

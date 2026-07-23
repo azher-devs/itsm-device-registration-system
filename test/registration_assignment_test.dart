@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:itsm_device_registration_system/controllers/device_registration_controller.dart';
 import 'package:itsm_device_registration_system/core/constants/app_routes.dart';
+import 'package:itsm_device_registration_system/core/services/audio_service.dart';
+import 'package:itsm_device_registration_system/core/services/clipboard_service.dart';
 import 'package:itsm_device_registration_system/l10n/app_localizations.dart';
 import 'package:itsm_device_registration_system/models/device.dart';
 import 'package:itsm_device_registration_system/models/employee.dart';
@@ -88,6 +90,14 @@ class FakeRegistrationRepository implements DeviceRegistrationRepository {
   }
 
   @override
+  Future<Employee> getEmployeeByContactId(String contactId) async {
+    if (contactId != employee.itopKey) {
+      throw const RegistrationDataException('Employee not found');
+    }
+    return employee;
+  }
+
+  @override
   Future<String> addAssignment({
     required Device device,
     required Employee employee,
@@ -120,11 +130,35 @@ class FakeRegistrationRepository implements DeviceRegistrationRepository {
   }
 }
 
+/// Records success-sound requests without invoking a platform audio plugin.
+class FakeSuccessAudioPlayer implements SuccessAudioPlayer {
+  int playCalls = 0;
+
+  @override
+  Future<void> playSuccess() async {
+    playCalls++;
+  }
+}
+
+/// Records copied values without invoking the platform clipboard channel.
+class FakeClipboardWriter implements ClipboardWriter {
+  final copiedValues = <String>[];
+
+  @override
+  Future<void> copy(String value) async {
+    copiedValues.add(value);
+  }
+}
+
 void main() {
   late FakeRegistrationRepository repository;
+  late FakeSuccessAudioPlayer successAudioPlayer;
+  late FakeClipboardWriter clipboardWriter;
 
   setUp(() {
     repository = FakeRegistrationRepository();
+    successAudioPlayer = FakeSuccessAudioPlayer();
+    clipboardWriter = FakeClipboardWriter();
   });
 
   /// Builds registration with an injectable repository and optional scanner.
@@ -138,6 +172,8 @@ void main() {
       ProviderScope(
         overrides: [
           deviceRegistrationRepositoryProvider.overrideWithValue(repository),
+          successAudioPlayerProvider.overrideWithValue(successAudioPlayer),
+          clipboardServiceProvider.overrideWithValue(clipboardWriter),
         ],
         child: MaterialApp(
           locale: locale,
@@ -217,6 +253,46 @@ void main() {
     expect(find.text('Cancel'), findsNothing);
   });
 
+  testWidgets(
+    'copy actions follow field values and replace duplicate feedback',
+    (tester) async {
+      await pumpRegistration(tester);
+
+      expect(find.byKey(const Key('copy_tag_number')), findsNothing);
+      expect(find.byKey(const Key('copy_serial_number')), findsNothing);
+      expect(find.byKey(const Key('copy_employee_id')), findsNothing);
+
+      await searchDevice(tester, unassignedDevice.tagNumber);
+      expect(find.byKey(const Key('copy_tag_number')), findsOneWidget);
+      expect(find.byKey(const Key('copy_serial_number')), findsOneWidget);
+      expect(find.byKey(const Key('copy_employee_id')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('copy_tag_number')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('copy_tag_number')));
+      await tester.pump();
+
+      expect(clipboardWriter.copiedValues, [
+        unassignedDevice.tagNumber,
+        unassignedDevice.tagNumber,
+      ]);
+      expect(find.text('Tag Number copied'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const Key('copy_serial_number')));
+      await tester.tap(find.byKey(const Key('copy_serial_number')));
+      await tester.pump();
+      expect(clipboardWriter.copiedValues.last, unassignedDevice.serialNumber);
+      expect(find.text('Serial Number copied'), findsOneWidget);
+
+      await searchEmployee(tester);
+      expect(find.byKey(const Key('copy_employee_id')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('copy_employee_id')));
+      await tester.pump();
+      expect(clipboardWriter.copiedValues.last, employee.employeeNumber);
+      expect(find.text('Employee ID copied'), findsOneWidget);
+    },
+  );
+
   testWidgets('Assign Device dialog shows identifiers and No cancels', (
     tester,
   ) async {
@@ -249,6 +325,7 @@ void main() {
     await tester.tap(find.text('No'));
     await tester.pumpAndSettle();
     expect(repository.addCalls, 0);
+    expect(successAudioPlayer.playCalls, 0);
     expect(
       find.text('The device has been assigned successfully.'),
       findsNothing,
@@ -270,6 +347,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(repository.addCalls, 1);
+    expect(successAudioPlayer.playCalls, 1);
     expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
     expect(find.text(employee.fullName), findsOneWidget);
     expect(
@@ -303,6 +381,7 @@ void main() {
     expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
     expect(find.text(employee.fullName), findsOneWidget);
     expect(find.text('API add failed'), findsOneWidget);
+    expect(successAudioPlayer.playCalls, 0);
     expect(
       find.text('The device has been assigned successfully.'),
       findsNothing,
@@ -357,6 +436,7 @@ void main() {
     await tester.tap(find.text('No'));
     await tester.pumpAndSettle();
     expect(repository.removeCalls, 0);
+    expect(successAudioPlayer.playCalls, 0);
     expect(
       find.text('Employee removed from the device successfully.'),
       findsNothing,
@@ -377,6 +457,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(repository.removeCalls, 1);
+    expect(successAudioPlayer.playCalls, 1);
     expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
     expect(find.text(employee.fullName), findsNothing);
     expect(find.text(assignedDevice.tagNumber), findsWidgets);
@@ -414,6 +495,7 @@ void main() {
     expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
     expect(find.text(employee.fullName), findsOneWidget);
     expect(find.text('API remove failed'), findsOneWidget);
+    expect(successAudioPlayer.playCalls, 0);
     expect(
       find.text('Employee removed from the device successfully.'),
       findsNothing,

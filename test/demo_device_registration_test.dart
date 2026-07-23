@@ -150,6 +150,19 @@ void main() {
     );
   });
 
+  test(
+    'controller exposes rename through a guarded Riverpod state flow',
+    () async {
+      final controller = DeviceRegistrationController(repository);
+      addTearDown(controller.dispose);
+
+      expect(await controller.searchDevice('TAG-SECOND'), isTrue);
+      expect(await controller.renameDevice('TAG-RENAMED'), isTrue);
+      expect(controller.state.operation, RegistrationOperation.idle);
+      expect(controller.state.device?.tagNumber, 'TAG-RENAMED');
+    },
+  );
+
   test('demo not-found and timeout scenarios return handled errors', () async {
     await expectLater(
       repository.getDevice('TAG-NOT-FOUND'),

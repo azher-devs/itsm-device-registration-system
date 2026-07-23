@@ -1,10 +1,14 @@
 // Barcode scanner screen backed by the device camera and Google ML Kit.
 
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -23,6 +27,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   /// ML Kit scanner instance reused across camera frames.
   final BarcodeScanner _barcodeScanner = BarcodeScanner();
 
+  /// Opens the platform image library for a single selected image.
+  final ImagePicker _imagePicker = ImagePicker();
+
   /// Active camera controller for live preview and frame streaming.
   CameraController? _cameraController;
 
@@ -34,6 +41,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   /// Prevents duplicate route pops after a barcode has been found.
   bool _hasScanned = false;
+
+  /// Disables scanner actions and shows progress while processing a gallery image.
+  bool _isProcessingGallery = false;
 
   /// Shows loading UI while camera permission and initialization resolve.
   bool _isInitializing = true;
@@ -88,10 +98,28 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   left: 24,
                   right: 24,
                   bottom: 28,
-                  child: ElevatedButton.icon(
-                    onPressed: _returnManualFallback,
-                    icon: const Icon(Icons.keyboard_alt_outlined),
-                    label: Text(l10n.manualEntry),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _GalleryScanButton(
+                        label: l10n.scanFromGallery,
+                        isLoading: _isProcessingGallery,
+                        onPressed: _isProcessingGallery || _hasScanned
+                            ? null
+                            : _scanFromGallery,
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isProcessingGallery
+                              ? null
+                              : _returnManualFallback,
+                          icon: const Icon(Icons.keyboard_alt_outlined),
+                          label: Text(l10n.manualEntry),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -150,7 +178,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   /// Converts camera frames into ML Kit input images and detects barcodes.
   Future<void> _processCameraImage(CameraImage image) async {
-    if (_isProcessingFrame || _hasScanned) {
+    if (_isProcessingFrame || _isProcessingGallery || _hasScanned) {
       return;
     }
 
@@ -162,19 +190,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         return;
       }
 
-      final barcodes = await _barcodeScanner.processImage(inputImage);
-      final scannedValue = _firstValidBarcodeValue(barcodes);
+      final scannedValue = await _processInputImage(inputImage);
 
       if (scannedValue == null || _hasScanned) {
         return;
       }
 
-      _hasScanned = true;
-      await _cameraController?.stopImageStream();
-
-      if (mounted) {
-        Navigator.of(context).pop(scannedValue);
-      }
+      await _completeScan(scannedValue);
     } catch (error) {
       debugPrint('Barcode scan frame skipped: $error');
     } finally {
@@ -249,6 +271,247 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     );
 
     return InputImage.fromBytes(bytes: plane.bytes, metadata: metadata);
+  }
+
+  /// Runs ML Kit for both live camera frames and selected gallery images.
+  Future<String?> _processInputImage(InputImage inputImage) async {
+    final barcodes = await _barcodeScanner.processImage(inputImage);
+    return _firstValidBarcodeValue(barcodes);
+  }
+
+  /// Returns one barcode result and prevents camera/gallery duplicate pops.
+  Future<void> _completeScan(String scannedValue) async {
+    if (_hasScanned) {
+      return;
+    }
+
+    _hasScanned = true;
+    await _pauseCameraStream();
+
+    if (mounted) {
+      Navigator.of(context).pop(scannedValue);
+    }
+  }
+
+  /// Selects and scans one gallery image while preserving the camera fallback.
+  Future<void> _scanFromGallery() async {
+    if (_isProcessingGallery || _hasScanned) {
+      return;
+    }
+
+    var shouldRetry = false;
+    setState(() => _isProcessingGallery = true);
+
+    try {
+      if (!await _requestGalleryPermissionIfNeeded()) {
+        return;
+      }
+
+      await _pauseCameraStream();
+      final selectedImage = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        requestFullMetadata: false,
+      );
+
+      // Closing the platform picker without a selection is not an error.
+      if (selectedImage == null) {
+        return;
+      }
+
+      await _waitForCameraFrame();
+      final scannedValue = await _processInputImage(
+        InputImage.fromFilePath(selectedImage.path),
+      );
+
+      if (scannedValue != null) {
+        await _completeScan(scannedValue);
+        return;
+      }
+
+      if (mounted) {
+        final action = await _showNoBarcodeDialog();
+        shouldRetry = action == _GalleryScanAction.tryAgain;
+      }
+    } on PlatformException catch (error) {
+      if (_isGalleryPermissionError(error)) {
+        await _showGalleryPermissionDialog();
+      } else {
+        debugPrint('Unable to scan selected gallery image: $error');
+        _showGalleryScanFailure();
+      }
+    } catch (error) {
+      debugPrint('Unable to scan selected gallery image: $error');
+      _showGalleryScanFailure();
+    } finally {
+      if (mounted && !_hasScanned) {
+        setState(() => _isProcessingGallery = false);
+      }
+      if (!_hasScanned) {
+        await _resumeCameraStream();
+      }
+    }
+
+    if (shouldRetry && mounted && !_hasScanned) {
+      await _scanFromGallery();
+    }
+  }
+
+  /// Requests photo access on iOS; Android uses the scoped system picker.
+  Future<bool> _requestGalleryPermissionIfNeeded() async {
+    if (!Platform.isIOS) {
+      return true;
+    }
+
+    final currentStatus = await Permission.photos.status;
+    if (currentStatus.isGranted || currentStatus.isLimited) {
+      return true;
+    }
+
+    final requestedStatus = await Permission.photos.request();
+    if (requestedStatus.isGranted || requestedStatus.isLimited) {
+      return true;
+    }
+
+    await _showGalleryPermissionDialog();
+    return false;
+  }
+
+  /// Explains denied gallery access and lets the user open app settings.
+  Future<void> _showGalleryPermissionDialog() async {
+    if (!mounted) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final shouldOpenSettings = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.galleryPermissionTitle),
+        content: Text(l10n.galleryPermissionMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.useCamera),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.openSettings),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldOpenSettings == true) {
+      await openAppSettings();
+    }
+  }
+
+  /// Offers another gallery selection or an immediate return to the camera.
+  Future<_GalleryScanAction?> _showNoBarcodeDialog() {
+    final l10n = AppLocalizations.of(context);
+    return showGeneralDialog<_GalleryScanAction>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.62),
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+          child: SafeArea(
+            child: Center(
+              child: NoBarcodeFoundDialog(
+                title: l10n.noBarcodeFoundTitle,
+                description: l10n.noBarcodeFoundMessage,
+                useCameraLabel: l10n.useCamera,
+                tryAgainLabel: l10n.tryAgain,
+                onUseCamera: () => Navigator.of(
+                  dialogContext,
+                ).pop(_GalleryScanAction.useCamera),
+                onTryAgain: () => Navigator.of(
+                  dialogContext,
+                ).pop(_GalleryScanAction.tryAgain),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Shows a brief localized message for non-permission gallery failures.
+  void _showGalleryScanFailure() {
+    if (!mounted) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l10n.galleryScanFailed)));
+  }
+
+  /// Stops new frames before ML Kit starts processing a selected image.
+  Future<void> _pauseCameraStream() async {
+    final controller = _cameraController;
+    if (controller == null ||
+        !controller.value.isInitialized ||
+        !controller.value.isStreamingImages) {
+      return;
+    }
+
+    try {
+      await controller.stopImageStream();
+    } on CameraException catch (error) {
+      debugPrint('Unable to pause camera stream: $error');
+    }
+  }
+
+  /// Restarts the default camera scanner after cancel or unsuccessful selection.
+  Future<void> _resumeCameraStream() async {
+    final controller = _cameraController;
+    if (!mounted ||
+        _hasScanned ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        controller.value.isStreamingImages) {
+      return;
+    }
+
+    try {
+      await controller.startImageStream(_processCameraImage);
+    } on CameraException catch (error) {
+      debugPrint('Unable to resume camera stream: $error');
+    }
+  }
+
+  /// Waits briefly for an in-flight camera frame before scanning a file.
+  Future<void> _waitForCameraFrame() async {
+    for (var attempt = 0; attempt < 40 && _isProcessingFrame; attempt++) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+  }
+
+  /// Recognizes platform image-picker permission failures.
+  bool _isGalleryPermissionError(PlatformException error) {
+    final details = '${error.code} ${error.message ?? ''}'.toLowerCase();
+    return details.contains('permission') ||
+        details.contains('access_denied') ||
+        details.contains('photo_access_denied');
   }
 
   /// Selects the first non-empty barcode value returned by ML Kit.
@@ -351,6 +614,347 @@ enum _ScannerError {
 
   /// No camera is available or the camera could not be initialized.
   unavailable,
+}
+
+/// User choice after ML Kit finds no barcode in a selected image.
+enum _GalleryScanAction { tryAgain, useCamera }
+
+/// Responsive Material dialog shown when a selected image has no barcode.
+class NoBarcodeFoundDialog extends StatelessWidget {
+  const NoBarcodeFoundDialog({
+    required this.title,
+    required this.description,
+    required this.useCameraLabel,
+    required this.tryAgainLabel,
+    required this.onUseCamera,
+    required this.onTryAgain,
+    super.key,
+  });
+
+  final String title;
+  final String description;
+  final String useCameraLabel;
+  final String tryAgainLabel;
+  final VoidCallback onUseCamera;
+  final VoidCallback onTryAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Material(
+          color: Colors.white,
+          elevation: 24,
+          shadowColor: Colors.black.withValues(alpha: 0.28),
+          clipBehavior: Clip.antiAlias,
+          borderRadius: BorderRadius.circular(30),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 30, 28, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _NoBarcodeIllustration(semanticLabel: title),
+                const SizedBox(height: 24),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF0B1B38),
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF667085),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final textScale = MediaQuery.textScalerOf(context).scale(1);
+                    final stackButtons =
+                        constraints.maxWidth < 320 || textScale > 1.3;
+
+                    if (stackButtons) {
+                      return Column(
+                        children: [
+                          _NoBarcodeActionButton(
+                            label: useCameraLabel,
+                            icon: Icons.camera_alt_outlined,
+                            isFilled: false,
+                            onPressed: onUseCamera,
+                          ),
+                          const SizedBox(height: 12),
+                          _NoBarcodeActionButton(
+                            label: tryAgainLabel,
+                            icon: Icons.refresh_rounded,
+                            isFilled: true,
+                            onPressed: onTryAgain,
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _NoBarcodeActionButton(
+                            label: useCameraLabel,
+                            icon: Icons.camera_alt_outlined,
+                            isFilled: false,
+                            onPressed: onUseCamera,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _NoBarcodeActionButton(
+                            label: tryAgainLabel,
+                            icon: Icons.refresh_rounded,
+                            isFilled: true,
+                            onPressed: onTryAgain,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Decorative barcode illustration used as the dialog's visual focus.
+class _NoBarcodeIllustration extends StatelessWidget {
+  const _NoBarcodeIllustration({required this.semanticLabel});
+
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      image: true,
+      label: semanticLabel,
+      child: SizedBox.square(
+        dimension: 116,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              top: 8,
+              left: 8,
+              child: _DecorationDot(
+                color: AppTheme.primaryBlue.withValues(alpha: 0.25),
+                size: 7,
+              ),
+            ),
+            const Positioned(
+              top: 14,
+              right: 5,
+              child: _DecorationDot(color: Color(0xFFFF8A9B), size: 7),
+            ),
+            Positioned(
+              bottom: 12,
+              left: 3,
+              child: _DecorationDot(
+                color: AppTheme.primaryBlue.withValues(alpha: 0.18),
+                size: 6,
+              ),
+            ),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF2FF),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.12),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.qr_code_scanner_rounded,
+                color: AppTheme.primaryBlue,
+                size: 46,
+              ),
+            ),
+            Positioned(
+              right: 9,
+              bottom: 10,
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: const BoxDecoration(
+                  color: AppTheme.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 19,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small accent dot surrounding the barcode illustration.
+class _DecorationDot extends StatelessWidget {
+  const _DecorationDot({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: SizedBox.square(dimension: size),
+    );
+  }
+}
+
+/// Consistent camera and retry actions used by the no-barcode dialog.
+class _NoBarcodeActionButton extends StatelessWidget {
+  const _NoBarcodeActionButton({
+    required this.label,
+    required this.icon,
+    required this.isFilled,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isFilled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final buttonHeight = (54 + ((textScale - 1) * 18)).clamp(54.0, 72.0);
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    );
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 21),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: SizedBox(
+        width: double.infinity,
+        height: buttonHeight,
+        child: isFilled
+            ? FilledButton(
+                onPressed: onPressed,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBlue,
+                  foregroundColor: Colors.white,
+                  shape: shape,
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: child,
+              )
+            : OutlinedButton(
+                onPressed: onPressed,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryBlue,
+                  side: BorderSide(
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.42),
+                    width: 1.5,
+                  ),
+                  shape: shape,
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: child,
+              ),
+      ),
+    );
+  }
+}
+
+/// Compact gallery action placed above the existing manual entry button.
+class _GalleryScanButton extends StatelessWidget {
+  const _GalleryScanButton({
+    required this.label,
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      key: const Key('scan_from_gallery_button'),
+      onPressed: onPressed,
+      icon: isLoading
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(Icons.photo_library_outlined),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        disabledForegroundColor: Colors.white70,
+        backgroundColor: Colors.black.withValues(alpha: 0.38),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.38)),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+        shape: const StadiumBorder(),
+      ),
+    );
+  }
 }
 
 /// Top scanner controls for back navigation, title, and flash control.

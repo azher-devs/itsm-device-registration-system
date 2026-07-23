@@ -287,6 +287,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alignBarcode => 'Align the barcode within\nthe frame to scan';
 
   @override
+  String get scanFromGallery => 'Scan from Gallery';
+
+  @override
+  String get noBarcodeFoundTitle => 'No Barcode Found';
+
+  @override
+  String get noBarcodeFoundMessage =>
+      'No barcode was found in the selected image.';
+
+  @override
+  String get tryAgain => 'Try Again';
+
+  @override
+  String get useCamera => 'Use Camera';
+
+  @override
+  String get galleryPermissionTitle => 'Gallery Access Required';
+
+  @override
+  String get galleryPermissionMessage =>
+      'Allow photo access to select an image and scan its barcode.';
+
+  @override
+  String get galleryScanFailed =>
+      'Unable to scan the selected image. Please try again.';
+
+  @override
+  String get openSettings => 'Open Settings';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get tagNumberCopied => 'Tag Number copied';
+
+  @override
+  String get serialNumberCopied => 'Serial Number copied';
+
+  @override
+  String get employeeIdCopied => 'Employee ID copied';
+
+  @override
   String get manualEntry => 'Manual Entry';
 
   @override

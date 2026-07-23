@@ -117,16 +117,31 @@ The Dio architecture follows the supplied iTop REST/JSON specification while
 remaining disconnected from the real server. Requests use multipart form data
 with `auth_user`, `auth_pwd`, and serialized `json_data` fields.
 
-Future server values are centralized in:
+Real-server values are centralized in:
 
 ```text
-lib/core/config/itop_configuration.dart
+lib/config/itop_config.dart
 ```
 
-Replace the placeholder base URL, username, and password there only when the
-real server is available. Application logic does not need to change. To enable
-the real repository later, remove the Fake API provider override in `lib/main.dart`
-after the server configuration has been supplied and verified.
+The demo remains available through `lib/main.dart` and `lib/main_demo.dart`.
+For authorized real-server testing, edit only these three constants:
+
+```dart
+static const baseUrl = 'https://your-itop-server';
+static const username = 'your_username';
+static const password = 'your_password';
+```
+
+Then run the dedicated real API entry point:
+
+```bash
+flutter run -t lib/main_itop.dart
+```
+
+No JSON configuration file or `--dart-define` argument is required. Do not
+commit real credentials; restore the placeholder values before committing or
+sharing the project. Repositories, controllers, models, providers, and UI code
+do not need to change.
 
 ## Requirements
 

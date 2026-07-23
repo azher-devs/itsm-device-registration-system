@@ -73,7 +73,8 @@ class Device {
   final String description;
   final List<DeviceContact> contacts;
 
-  bool get isAssigned => assignedEmployeeNumber != null;
+  /// iTop reports assignment through the presence of `contacts_list` rows.
+  bool get isAssigned => contacts.isNotEmpty;
 
   String? get assignedEmployeeNumber {
     for (final contact in contacts) {

@@ -86,6 +86,15 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
   }
 
   @override
+  Future<Employee> getEmployeeByContactId(String contactId) async {
+    await Future<void>.delayed(delays.employeeSearch);
+    if (contactId.trim() != _employee.itopKey) {
+      throw const RegistrationDataException(notFoundMessage);
+    }
+    return _employee;
+  }
+
+  @override
   Future<String> addAssignment({
     required Device device,
     required Employee employee,

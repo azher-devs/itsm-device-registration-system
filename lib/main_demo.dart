@@ -40,6 +40,7 @@ class DemoItsmApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProviderScope(
       overrides: [
+        demoDioLoggingEnabledProvider.overrideWithValue(true),
         deviceRegistrationRepositoryProvider.overrideWithValue(repository),
       ],
       child: ItsmApp(

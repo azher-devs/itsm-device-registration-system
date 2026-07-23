@@ -1,5 +1,7 @@
 // Contract tests for documented iTop instructions without network access.
 
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:itsm_device_registration_system/core/config/itop_configuration.dart';
@@ -27,6 +29,236 @@ class FakeItopApiClient extends ItopApiClient {
 
 void main() {
   test(
+    'Dio client posts documented multipart fields and decodes JSON text',
+    () async {
+      RequestOptions? capturedRequest;
+      final dio = Dio(BaseOptions(baseUrl: 'https://your-itop-instance.com'))
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              capturedRequest = options;
+              handler.resolve(
+                Response<Object?>(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: '{"code":0,"message":"Found: 0","objects":{}}',
+                ),
+              );
+            },
+          ),
+        );
+      const config = ItopConfiguration(
+        baseUrl: 'https://your-itop-instance.com',
+        username: 'api_username',
+        password: 'api_password',
+      );
+      final client = ItopApiClient(dio: dio, config: config);
+      final instruction = {
+        'operation': 'core/get',
+        'class': 'PhysicalDevice',
+        'key': "SELECT PhysicalDevice WHERE name = '2015020005'",
+      };
+
+      final response = await client.execute(instruction);
+
+      expect(response.message, 'Found: 0');
+      expect(capturedRequest?.method, 'POST');
+      expect(capturedRequest?.path, ItopConfiguration.restPath);
+      expect(
+        capturedRequest?.contentType,
+        Headers.multipartFormDataContentType,
+      );
+      final formData = capturedRequest?.data as FormData;
+      final fields = Map<String, String>.fromEntries(formData.fields);
+      expect(fields['auth_user'], 'api_username');
+      expect(fields['auth_pwd'], 'api_password');
+      expect(jsonDecode(fields['json_data']!), instruction);
+    },
+  );
+
+  test('Dio client rejects malformed success responses safely', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://your-itop-instance.com'))
+      ..interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(
+              Response<Object?>(
+                requestOptions: options,
+                statusCode: 200,
+                data: 'not-json',
+              ),
+            );
+          },
+        ),
+      );
+    final client = ItopApiClient(
+      dio: dio,
+      config: ItopConfiguration.placeholder,
+    );
+
+    await expectLater(
+      client.execute(const {'operation': 'core/get'}),
+      throwsA(
+        isA<ItopClientException>().having(
+          (error) => error.message,
+          'message',
+          'Invalid iTop response.',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'Dio client rejects missing fields and unexpected object shapes',
+    () async {
+      for (final invalidBody in [
+        '{"message":"Missing code","objects":{}}',
+        '{"code":0,"message":"Found: 1","objects":[]}',
+      ]) {
+        final dio = Dio(BaseOptions(baseUrl: 'https://your-itop-instance.com'))
+          ..interceptors.add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                handler.resolve(
+                  Response<Object?>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: invalidBody,
+                  ),
+                );
+              },
+            ),
+          );
+        final client = ItopApiClient(
+          dio: dio,
+          config: ItopConfiguration.placeholder,
+        );
+
+        await expectLater(
+          client.execute(const {'operation': 'core/get'}),
+          throwsA(
+            isA<ItopClientException>().having(
+              (error) => error.message,
+              'message',
+              'Invalid iTop response.',
+            ),
+          ),
+        );
+      }
+    },
+  );
+
+  test(
+    'Dio client preserves an HTTP API message returned as JSON text',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://your-itop-instance.com'))
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.badResponse,
+                  response: Response<Object?>(
+                    requestOptions: options,
+                    statusCode: 401,
+                    data: '{"code":1,"message":"Invalid credentials"}',
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      final client = ItopApiClient(
+        dio: dio,
+        config: ItopConfiguration.placeholder,
+      );
+
+      await expectLater(
+        client.execute(const {'operation': 'core/get'}),
+        throwsA(
+          isA<ItopClientException>().having(
+            (error) => error.message,
+            'message',
+            'Invalid credentials',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('Dio client classifies transport timeouts', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://your-itop-instance.com'))
+      ..interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.connectionTimeout,
+                message: 'Connection timed out',
+              ),
+            );
+          },
+        ),
+      );
+    final client = ItopApiClient(
+      dio: dio,
+      config: ItopConfiguration.placeholder,
+    );
+
+    await expectLater(
+      client.execute(const {'operation': 'core/get'}),
+      throwsA(
+        isA<ItopClientException>()
+            .having((error) => error.isTimeout, 'isTimeout', isTrue)
+            .having(
+              (error) => error.message,
+              'message',
+              'Connection timed out',
+            ),
+      ),
+    );
+  });
+
+  test(
+    'Dio client converts server unavailability to a handled error',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://your-itop-instance.com'))
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.connectionError,
+                  message: 'Server unavailable',
+                ),
+              );
+            },
+          ),
+        );
+      final client = ItopApiClient(
+        dio: dio,
+        config: ItopConfiguration.placeholder,
+      );
+
+      await expectLater(
+        client.execute(const {'operation': 'core/get'}),
+        throwsA(
+          isA<ItopClientException>()
+              .having((error) => error.isTimeout, 'isTimeout', isFalse)
+              .having(
+                (error) => error.message,
+                'message',
+                'Server unavailable',
+              ),
+        ),
+      );
+    },
+  );
+
+  test(
     'device search uses PhysicalDevice name and documented fields',
     () async {
       final client = FakeItopApiClient([_response(message: 'Found: 0')]);
@@ -49,7 +281,7 @@ void main() {
   );
 
   test(
-    'repository resolves contacts_list through a second Person request',
+    'repository resolves one contacts_list Person without duplicate requests',
     () async {
       final client = FakeItopApiClient([
         _response(
@@ -88,9 +320,14 @@ void main() {
       );
 
       final device = await repository.getDevice('2015020005');
+      final employee = await repository.getEmployeeByContactId(
+        device.assignedContactId!,
+      );
 
       expect(device.tagNumber, '2015020005');
-      expect(device.assignedEmployeeNumber, 'EMP8842');
+      expect(device.isAssigned, isTrue);
+      expect(employee.employeeNumber, 'EMP8842');
+      expect(client.instructions, hasLength(2));
       expect(client.instructions[1]['class'], 'Person');
       expect(client.instructions[1]['key'], '10064');
     },

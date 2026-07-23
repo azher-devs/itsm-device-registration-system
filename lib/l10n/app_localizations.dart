@@ -620,6 +620,84 @@ abstract class AppLocalizations {
   /// **'Align the barcode within\nthe frame to scan'**
   String get alignBarcode;
 
+  /// No description provided for @scanFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan from Gallery'**
+  String get scanFromGallery;
+
+  /// No description provided for @noBarcodeFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Barcode Found'**
+  String get noBarcodeFoundTitle;
+
+  /// No description provided for @noBarcodeFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No barcode was found in the selected image.'**
+  String get noBarcodeFoundMessage;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get tryAgain;
+
+  /// No description provided for @useCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Camera'**
+  String get useCamera;
+
+  /// No description provided for @galleryPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery Access Required'**
+  String get galleryPermissionTitle;
+
+  /// No description provided for @galleryPermissionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow photo access to select an image and scan its barcode.'**
+  String get galleryPermissionMessage;
+
+  /// No description provided for @galleryScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to scan the selected image. Please try again.'**
+  String get galleryScanFailed;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get openSettings;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @tagNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag Number copied'**
+  String get tagNumberCopied;
+
+  /// No description provided for @serialNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Serial Number copied'**
+  String get serialNumberCopied;
+
+  /// No description provided for @employeeIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee ID copied'**
+  String get employeeIdCopied;
+
   /// No description provided for @manualEntry.
   ///
   /// In en, this message translates to:

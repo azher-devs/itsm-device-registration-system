@@ -30,6 +30,8 @@ class RegistrationTimeoutException implements Exception {
 abstract class DeviceRegistrationRepository {
   Future<Device> getDevice(String tagNumber);
 
+  Future<Employee> getEmployeeByContactId(String contactId);
+
   Future<Employee> getEmployee(String employeeNumber);
 
   Future<String> addAssignment({
@@ -59,24 +61,23 @@ class DioDeviceRegistrationRepository implements DeviceRegistrationRepository {
     return _guard(() async {
       final response = await _service.getDeviceByName(tagNumber);
       final object = _requireObject(response);
-      final unresolvedDevice = Device.fromItopObject(object);
-      final contacts = <DeviceContact>[];
-
-      for (final contact in unresolvedDevice.contacts) {
-        final personResponse = await _service.getEmployeeByContactId(
-          contact.contactId,
-        );
-        final employee = Employee.fromItopObject(
-          _requireObject(personResponse),
-        );
-        contacts.add(contact.copyWith(employeeNumber: employee.employeeNumber));
-      }
-
-      final device = Device.fromItopObject(object, contacts: contacts);
+      final device = Device.fromItopObject(object);
       if (!device.isValid) {
-        throw RegistrationDataException(response.message);
+        throw const RegistrationDataException(_invalidResponseMessage);
       }
       return device;
+    });
+  }
+
+  @override
+  Future<Employee> getEmployeeByContactId(String contactId) {
+    return _guard(() async {
+      final response = await _service.getEmployeeByContactId(contactId);
+      final employee = Employee.fromItopObject(_requireObject(response));
+      if (!employee.isValid) {
+        throw const RegistrationDataException(_invalidResponseMessage);
+      }
+      return employee;
     });
   }
 
@@ -86,7 +87,7 @@ class DioDeviceRegistrationRepository implements DeviceRegistrationRepository {
       final response = await _service.getEmployeeByNumber(employeeNumber);
       final employee = Employee.fromItopObject(_requireObject(response));
       if (!employee.isValid) {
-        throw RegistrationDataException(response.message);
+        throw const RegistrationDataException(_invalidResponseMessage);
       }
       return employee;
     });
@@ -143,26 +144,38 @@ ItopObject _requireObject(ItopResponse response) {
   _requireSuccess(response);
   final object = response.firstObject;
   if (object == null) {
-    throw RegistrationDataException(response.message);
+    throw RegistrationDataException(_messageOrInvalid(response.message));
   }
   if (object.code != 0) {
-    throw RegistrationDataException(object.message);
+    throw RegistrationDataException(
+      _messageOrInvalid(
+        object.message.isNotEmpty ? object.message : response.message,
+      ),
+    );
   }
   return object;
 }
 
 void _requireSuccess(ItopResponse response) {
   if (!response.isSuccess) {
-    throw RegistrationDataException(response.message);
+    throw RegistrationDataException(_messageOrInvalid(response.message));
   }
 
   for (final object in response.objects.values) {
     if (object.code != 0) {
       throw RegistrationDataException(
-        object.message.isNotEmpty ? object.message : response.message,
+        _messageOrInvalid(
+          object.message.isNotEmpty ? object.message : response.message,
+        ),
       );
     }
   }
+}
+
+const _invalidResponseMessage = 'Invalid iTop response.';
+
+String _messageOrInvalid(String message) {
+  return message.trim().isEmpty ? _invalidResponseMessage : message;
 }
 
 /// Converts transport failures while preserving exact iTop messages.

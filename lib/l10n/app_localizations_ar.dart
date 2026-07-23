@@ -285,6 +285,47 @@ class AppLocalizationsAr extends AppLocalizations {
   String get alignBarcode => 'ضع الباركود داخل\nالإطار للمسح';
 
   @override
+  String get scanFromGallery => 'المسح من المعرض';
+
+  @override
+  String get noBarcodeFoundTitle => 'لم يتم العثور على باركود';
+
+  @override
+  String get noBarcodeFoundMessage =>
+      'لم يتم العثور على باركود في الصورة المحددة.';
+
+  @override
+  String get tryAgain => 'حاول مرة أخرى';
+
+  @override
+  String get useCamera => 'استخدام الكاميرا';
+
+  @override
+  String get galleryPermissionTitle => 'مطلوب إذن الوصول إلى الصور';
+
+  @override
+  String get galleryPermissionMessage =>
+      'اسمح بالوصول إلى الصور لاختيار صورة ومسح الباركود منها.';
+
+  @override
+  String get galleryScanFailed => 'تعذر مسح الصورة المحددة. حاول مرة أخرى.';
+
+  @override
+  String get openSettings => 'فتح الإعدادات';
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String get tagNumberCopied => 'تم نسخ رقم الجهاز';
+
+  @override
+  String get serialNumberCopied => 'تم نسخ الرقم التسلسلي';
+
+  @override
+  String get employeeIdCopied => 'تم نسخ الرقم الوظيفي';
+
+  @override
   String get manualEntry => 'إدخال يدوي';
 
   @override
