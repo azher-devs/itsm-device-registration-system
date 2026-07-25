@@ -247,7 +247,7 @@ class _DeviceRegistrationScreenState
     );
   }
 
-  /// Displays all relevant device values returned by the lookup endpoint.
+  /// Displays only the inventory details required in Device Information.
   Widget _buildDeviceCard(Device? device, AppLocalizations l10n) {
     if (device == null) {
       return InfoCard.empty(
@@ -261,20 +261,26 @@ class _DeviceRegistrationScreenState
       title: l10n.deviceInformation,
       icon: Icons.laptop_mac,
       rows: [
-        InfoRow(l10n.tagNumber, _valueOrUnavailable(device.tagNumber, l10n)),
-        InfoRow(l10n.brand, _valueOrUnavailable(device.brand, l10n)),
-        InfoRow(l10n.deviceType, _valueOrUnavailable(device.deviceType, l10n)),
-        InfoRow(
-          l10n.serialNumber,
-          _valueOrUnavailable(device.serialNumber, l10n),
-        ),
-        InfoRow(l10n.status, _localizedDeviceStatus(device.status, l10n)),
-        InfoRow(
-          l10n.assignmentStatus,
-          device.isAssigned ? l10n.assigned : l10n.notAssigned,
+        _deviceInfoRow(l10n.brand, device.brand),
+        _deviceInfoRow(l10n.model, device.model),
+        _deviceInfoRow(l10n.assetNumber, device.assetNumber),
+        _deviceInfoRow(
+          l10n.status,
+          device.status,
+          displayValue: _localizedDeviceStatus(device.status, l10n),
         ),
       ],
     );
+  }
+
+  /// Keeps required rows visible and replaces blank API values with `N/A`.
+  InfoRow _deviceInfoRow(
+    String label,
+    String rawValue, {
+    String? displayValue,
+  }) {
+    final value = rawValue.trim();
+    return InfoRow(label, value.isEmpty ? 'N/A' : displayValue ?? value);
   }
 
   /// Displays the three employee details required by the current UI.
@@ -488,19 +494,30 @@ class _AssignmentConfirmationDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final actionColor = widget.isRemove
         ? AppTheme.danger
+        : isDark
+        ? colorScheme.primary
         : AppTheme.primaryBlue;
+    final actionForeground = widget.isRemove || !isDark
+        ? Colors.white
+        : colorScheme.onPrimary;
     final iconBackground = widget.isRemove
         ? AppTheme.danger.withValues(alpha: 0.10)
+        : isDark
+        ? colorScheme.primary.withValues(alpha: 0.14)
         : AppTheme.lightBlue;
+    final outlineColor = isDark ? colorScheme.primary : AppTheme.primaryBlue;
 
     return PopScope(
       canPop: !_isLoading,
       child: Dialog(
         key: const Key('assignment_confirmation_dialog'),
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? colorScheme.surface : Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 12,
         shadowColor: Colors.black.withValues(alpha: 0.18),
@@ -534,8 +551,8 @@ class _AssignmentConfirmationDialogState
                 Text(
                   widget.isRemove ? l10n.removeAssignment : l10n.assignDevice,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppTheme.darkBlue,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: isDark ? colorScheme.onSurface : AppTheme.darkBlue,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -545,8 +562,10 @@ class _AssignmentConfirmationDialogState
                       ? l10n.removeDeviceAssignmentConfirmation
                       : l10n.assignDeviceConfirmation,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.mutedText,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isDark
+                        ? colorScheme.onSurfaceVariant
+                        : AppTheme.mutedText,
                     height: 1.4,
                   ),
                 ),
@@ -566,12 +585,11 @@ class _AssignmentConfirmationDialogState
                             ? null
                             : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.primaryBlue,
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(
-                            color: AppTheme.primaryBlue,
-                            width: 1.4,
-                          ),
+                          foregroundColor: outlineColor,
+                          backgroundColor: isDark
+                              ? Colors.transparent
+                              : Colors.white,
+                          side: BorderSide(color: outlineColor, width: 1.4),
                           minimumSize: const Size.fromHeight(52),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -587,18 +605,18 @@ class _AssignmentConfirmationDialogState
                         onPressed: _isLoading ? null : _confirm,
                         style: FilledButton.styleFrom(
                           backgroundColor: actionColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: actionForeground,
                           minimumSize: const Size.fromHeight(52),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: _isLoading
-                            ? const SizedBox.square(
+                            ? SizedBox.square(
                                 dimension: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.2,
-                                  color: Colors.white,
+                                  color: actionForeground,
                                 ),
                               )
                             : Text(l10n.yes),
@@ -643,11 +661,20 @@ class _ConfirmationInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = isDark
+        ? colorScheme.outlineVariant
+        : const Color(0xFFE5EAF2);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9FC),
+        color: isDark
+            ? colorScheme.surfaceContainerHighest
+            : const Color(0xFFF7F9FC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5EAF2)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: [
@@ -656,12 +683,12 @@ class _ConfirmationInfoCard extends StatelessWidget {
             label: tagLabel,
             value: tagNumber,
           ),
-          const Divider(
+          Divider(
             height: 1,
             thickness: 1,
             indent: 54,
             endIndent: 16,
-            color: Color(0xFFE5EAF2),
+            color: borderColor,
           ),
           _ConfirmationInfoRow(
             icon: Icons.badge_outlined,
@@ -688,17 +715,27 @@ class _ConfirmationInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       child: Row(
         children: [
-          Icon(icon, color: AppTheme.primaryBlue, size: 22),
+          Icon(
+            icon,
+            color: isDark ? colorScheme.primary : AppTheme.primaryBlue,
+            size: 22,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mutedText,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isDark
+                    ? colorScheme.onSurfaceVariant
+                    : AppTheme.mutedText,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -709,8 +746,8 @@ class _ConfirmationInfoRow extends StatelessWidget {
               value,
               textAlign: TextAlign.end,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.darkBlue,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isDark ? colorScheme.onSurface : AppTheme.darkBlue,
                 fontWeight: FontWeight.w700,
               ),
             ),

@@ -7,10 +7,12 @@ import 'package:itsm_device_registration_system/controllers/device_registration_
 import 'package:itsm_device_registration_system/core/constants/app_routes.dart';
 import 'package:itsm_device_registration_system/core/services/audio_service.dart';
 import 'package:itsm_device_registration_system/core/services/clipboard_service.dart';
+import 'package:itsm_device_registration_system/core/theme/app_theme.dart';
 import 'package:itsm_device_registration_system/l10n/app_localizations.dart';
 import 'package:itsm_device_registration_system/models/device.dart';
 import 'package:itsm_device_registration_system/models/employee.dart';
 import 'package:itsm_device_registration_system/repositories/device_registration_repository.dart';
+import 'package:itsm_device_registration_system/shared/widgets/info_card.dart';
 import 'package:itsm_device_registration_system/views/registration/device_registration_screen.dart';
 
 const employee = Employee(
@@ -29,6 +31,8 @@ const unassignedDevice = Device(
   itopClass: 'PC',
   tagNumber: 'TAG-UNASSIGNED',
   brand: 'Dell',
+  model: 'Latitude 5420',
+  assetNumber: 'ASSET-1603',
   deviceType: 'Laptop',
   serialNumber: 'SN-UNASSIGNED',
   status: 'In Service',
@@ -167,6 +171,7 @@ void main() {
     String? initialTag,
     String? scannedTag,
     Locale locale = const Locale('en'),
+    bool darkMode = false,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -176,6 +181,7 @@ void main() {
           clipboardServiceProvider.overrideWithValue(clipboardWriter),
         ],
         child: MaterialApp(
+          theme: darkMode ? AppTheme.dark : null,
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -235,6 +241,51 @@ void main() {
 
     expect(find.text(unassignedDevice.serialNumber), findsWidgets);
     expect(find.byKey(const Key('add_assignment_button')), findsNothing);
+  });
+
+  testWidgets('device card shows only approved non-empty inventory fields', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+
+    final deviceCard = find.byType(InfoCard).first;
+    Finder cardText(String value) =>
+        find.descendant(of: deviceCard, matching: find.text(value));
+
+    expect(cardText('Brand'), findsOneWidget);
+    expect(cardText(unassignedDevice.brand), findsOneWidget);
+    expect(cardText('Model'), findsOneWidget);
+    expect(cardText(unassignedDevice.model), findsOneWidget);
+    expect(cardText('Asset Number'), findsOneWidget);
+    expect(cardText(unassignedDevice.assetNumber), findsOneWidget);
+    expect(cardText('Status'), findsOneWidget);
+    expect(cardText(unassignedDevice.status), findsOneWidget);
+    expect(cardText('Tag Number'), findsNothing);
+    expect(cardText('Device Type'), findsNothing);
+    expect(cardText('Serial Number'), findsNothing);
+    expect(cardText('Assignment Status'), findsNothing);
+  });
+
+  testWidgets('device card shows N/A for empty model and asset number', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, assignedDevice.tagNumber);
+
+    final deviceCard = find.byType(InfoCard).first;
+    expect(
+      find.descendant(of: deviceCard, matching: find.text('Model')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: deviceCard, matching: find.text('Asset Number')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: deviceCard, matching: find.text('N/A')),
+      findsNWidgets(2),
+    );
   });
 
   testWidgets('valid employee shows Add and serial number is read-only', (
@@ -330,6 +381,30 @@ void main() {
       find.text('The device has been assigned successfully.'),
       findsNothing,
     );
+  });
+
+  testWidgets('Assign Device dialog uses dark theme surfaces and text', (
+    tester,
+  ) async {
+    await pumpRegistration(tester, darkMode: true);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
+    await tester.tap(find.byKey(const Key('add_assignment_button')));
+    await tester.pumpAndSettle();
+
+    final dialog = tester.widget<Dialog>(
+      find.byKey(const Key('assignment_confirmation_dialog')),
+    );
+    final title = tester.widget<Text>(find.text('Assign Device'));
+    final message = tester.widget<Text>(
+      find.text('Are you sure you want to assign this device?'),
+    );
+
+    expect(dialog.backgroundColor, AppTheme.darkSurfaceVariant);
+    expect(title.style?.color, Colors.white);
+    expect(message.style?.color, isNot(AppTheme.mutedText));
   });
 
   testWidgets('confirmed Add sends POST action and changes to Remove', (

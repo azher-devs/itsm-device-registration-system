@@ -107,6 +107,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get brand => 'العلامة التجارية';
 
   @override
+  String get model => 'الطراز';
+
+  @override
+  String get assetNumber => 'رقم الأصل';
+
+  @override
   String get deviceType => 'نوع الجهاز';
 
   @override
@@ -119,13 +125,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notAssigned => 'غير مخصص';
 
   @override
-  String get assignmentStatus => 'حالة العهدة';
-
-  @override
   String get serialNumber => 'الرقم التسلسلي';
-
-  @override
-  String get enterSerialNumber => 'أدخل الرقم التسلسلي';
 
   @override
   String get serialNumberFromDevice => 'يتم تحميله من الجهاز المحدد';
@@ -146,9 +146,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invalidTagNumber => 'أدخل رقم جهاز صحيحًا.';
 
   @override
-  String get invalidSerialNumber => 'أدخل رقمًا تسلسليًا صحيحًا.';
-
-  @override
   String get invalidEmployeeId => 'أدخل رقمًا وظيفيًا صحيحًا.';
 
   @override
@@ -162,16 +159,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeeName => 'اسم الموظف';
 
   @override
-  String get email => 'البريد الإلكتروني';
-
-  @override
   String get organization => 'المؤسسة';
-
-  @override
-  String get phone => 'الهاتف';
-
-  @override
-  String get jobTitle => 'المسمى الوظيفي';
 
   @override
   String get assignedEmployee => 'الموظف المخصص';
@@ -180,28 +168,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notAvailable => 'غير متوفر';
 
   @override
-  String get deviceLookupFailed =>
-      'لم يتم العثور على الجهاز. تحقق من رقم الجهاز وحاول مرة أخرى.';
-
-  @override
   String get deviceLookupTimeout =>
       'انتهت مهلة البحث عن الجهاز. يرجى المحاولة مرة أخرى.';
 
   @override
-  String get employeeLookupFailed =>
-      'لم يتم العثور على الموظف. تحقق من الرقم الوظيفي وحاول مرة أخرى.';
-
-  @override
-  String get department => 'القسم';
-
-  @override
-  String get location => 'الموقع';
-
-  @override
   String get scanBarcode => 'مسح الباركود';
-
-  @override
-  String get submit => 'إرسال';
 
   @override
   String get cancel => 'إلغاء';
@@ -233,18 +204,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'هل أنت متأكد أنك تريد إزالة هذا الموظف من هذا الجهاز؟';
 
   @override
-  String get addAssignment => 'إضافة العهدة';
-
-  @override
   String get removeAssignment => 'إزالة العهدة';
-
-  @override
-  String get addAssignmentConfirmation =>
-      'هل أنت متأكد أنك تريد ربط هذا الجهاز بالموظف المحدد؟';
-
-  @override
-  String get removeAssignmentConfirmation =>
-      'هل أنت متأكد أنك تريد إزالة هذا الموظف من الجهاز؟';
 
   @override
   String get assignmentAddedSuccessfully => 'تم تخصيص الجهاز بنجاح.';
@@ -260,13 +220,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get assignmentRemovalFailure =>
       'تعذرت إزالة العهدة. يرجى المحاولة مرة أخرى.';
-
-  @override
-  String get confirmSubmission => 'تأكيد الإرسال';
-
-  @override
-  String get submitConfirmationMessage =>
-      'هل أنت متأكد أنك تريد إرسال التسجيل؟';
 
   @override
   String get initializingCamera => 'جاري تهيئة الكاميرا...';

@@ -290,6 +290,18 @@ abstract class AppLocalizations {
   /// **'Brand'**
   String get brand;
 
+  /// No description provided for @model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get model;
+
+  /// No description provided for @assetNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset Number'**
+  String get assetNumber;
+
   /// No description provided for @deviceType.
   ///
   /// In en, this message translates to:
@@ -314,23 +326,11 @@ abstract class AppLocalizations {
   /// **'Not Assigned'**
   String get notAssigned;
 
-  /// No description provided for @assignmentStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Assignment Status'**
-  String get assignmentStatus;
-
   /// No description provided for @serialNumber.
   ///
   /// In en, this message translates to:
   /// **'Serial Number'**
   String get serialNumber;
-
-  /// No description provided for @enterSerialNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter serial number'**
-  String get enterSerialNumber;
 
   /// No description provided for @serialNumberFromDevice.
   ///
@@ -368,12 +368,6 @@ abstract class AppLocalizations {
   /// **'Enter a valid tag number.'**
   String get invalidTagNumber;
 
-  /// No description provided for @invalidSerialNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid serial number.'**
-  String get invalidSerialNumber;
-
   /// No description provided for @invalidEmployeeId.
   ///
   /// In en, this message translates to:
@@ -398,29 +392,11 @@ abstract class AppLocalizations {
   /// **'Employee Name'**
   String get employeeName;
 
-  /// No description provided for @email.
-  ///
-  /// In en, this message translates to:
-  /// **'Email'**
-  String get email;
-
   /// No description provided for @organization.
   ///
   /// In en, this message translates to:
   /// **'Organization'**
   String get organization;
-
-  /// No description provided for @phone.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone'**
-  String get phone;
-
-  /// No description provided for @jobTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Function / Job Title'**
-  String get jobTitle;
 
   /// No description provided for @assignedEmployee.
   ///
@@ -434,47 +410,17 @@ abstract class AppLocalizations {
   /// **'Not available'**
   String get notAvailable;
 
-  /// No description provided for @deviceLookupFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Device not found. Check the tag number and try again.'**
-  String get deviceLookupFailed;
-
   /// No description provided for @deviceLookupTimeout.
   ///
   /// In en, this message translates to:
   /// **'Device lookup timed out. Please try again.'**
   String get deviceLookupTimeout;
 
-  /// No description provided for @employeeLookupFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Employee not found. Check the employee ID and try again.'**
-  String get employeeLookupFailed;
-
-  /// No description provided for @department.
-  ///
-  /// In en, this message translates to:
-  /// **'Department'**
-  String get department;
-
-  /// No description provided for @location.
-  ///
-  /// In en, this message translates to:
-  /// **'Location'**
-  String get location;
-
   /// No description provided for @scanBarcode.
   ///
   /// In en, this message translates to:
   /// **'Scan Barcode'**
   String get scanBarcode;
-
-  /// No description provided for @submit.
-  ///
-  /// In en, this message translates to:
-  /// **'Submit'**
-  String get submit;
 
   /// No description provided for @cancel.
   ///
@@ -530,29 +476,11 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to remove this employee from this device?'**
   String get removeDeviceAssignmentConfirmation;
 
-  /// No description provided for @addAssignment.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Assignment'**
-  String get addAssignment;
-
   /// No description provided for @removeAssignment.
   ///
   /// In en, this message translates to:
   /// **'Remove Assignment'**
   String get removeAssignment;
-
-  /// No description provided for @addAssignmentConfirmation.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to assign this device to the selected employee?'**
-  String get addAssignmentConfirmation;
-
-  /// No description provided for @removeAssignmentConfirmation.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to remove this employee from the device?'**
-  String get removeAssignmentConfirmation;
 
   /// No description provided for @assignmentAddedSuccessfully.
   ///
@@ -577,18 +505,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to remove the assignment. Please try again.'**
   String get assignmentRemovalFailure;
-
-  /// No description provided for @confirmSubmission.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm Submission'**
-  String get confirmSubmission;
-
-  /// No description provided for @submitConfirmationMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to submit the registration?'**
-  String get submitConfirmationMessage;
 
   /// No description provided for @initializingCamera.
   ///

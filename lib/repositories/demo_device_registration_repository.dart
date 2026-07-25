@@ -40,8 +40,6 @@ class DemoDeviceRegistrationRepository implements DeviceRegistrationRepository {
 
   static const String validEmployeeNumber = 'EMP-10045';
   static const String timeoutTag = 'TAG-TIMEOUT';
-  static const String notFoundTag = 'TAG-NOT-FOUND';
-  static const String invalidEmployeeNumber = 'EMP-NOT-FOUND';
   static const String notFoundMessage = 'Found: 0';
   static const String addFailureMessage = 'Unable to create assignment';
   static const String removeFailureMessage = 'Unable to delete assignment';

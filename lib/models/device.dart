@@ -22,13 +22,6 @@ class DeviceContact {
       ]),
     );
   }
-
-  DeviceContact copyWith({String? employeeNumber}) {
-    return DeviceContact(
-      contactId: contactId,
-      employeeNumber: employeeNumber ?? this.employeeNumber,
-    );
-  }
 }
 
 /// Physical device details used by registration and assignment workflows.

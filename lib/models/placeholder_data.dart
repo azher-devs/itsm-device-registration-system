@@ -26,10 +26,4 @@ class PlaceholderEmployeeData {
 
   /// Example employee name shown after validation.
   static const name = 'Ahmed Al Balushi';
-
-  /// Example department shown in employee details.
-  static const department = 'Information Technology';
-
-  /// Example location shown in employee details.
-  static const location = 'Sultan Qaboos University';
 }

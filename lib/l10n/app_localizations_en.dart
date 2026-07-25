@@ -107,6 +107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brand => 'Brand';
 
   @override
+  String get model => 'Model';
+
+  @override
+  String get assetNumber => 'Asset Number';
+
+  @override
   String get deviceType => 'Device Type';
 
   @override
@@ -119,13 +125,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notAssigned => 'Not Assigned';
 
   @override
-  String get assignmentStatus => 'Assignment Status';
-
-  @override
   String get serialNumber => 'Serial Number';
-
-  @override
-  String get enterSerialNumber => 'Enter serial number';
 
   @override
   String get serialNumberFromDevice => 'Loaded from selected device';
@@ -146,9 +146,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidTagNumber => 'Enter a valid tag number.';
 
   @override
-  String get invalidSerialNumber => 'Enter a valid serial number.';
-
-  @override
   String get invalidEmployeeId => 'Enter a valid employee ID.';
 
   @override
@@ -162,16 +159,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeeName => 'Employee Name';
 
   @override
-  String get email => 'Email';
-
-  @override
   String get organization => 'Organization';
-
-  @override
-  String get phone => 'Phone';
-
-  @override
-  String get jobTitle => 'Function / Job Title';
 
   @override
   String get assignedEmployee => 'Assigned employee';
@@ -180,28 +168,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notAvailable => 'Not available';
 
   @override
-  String get deviceLookupFailed =>
-      'Device not found. Check the tag number and try again.';
-
-  @override
   String get deviceLookupTimeout =>
       'Device lookup timed out. Please try again.';
 
   @override
-  String get employeeLookupFailed =>
-      'Employee not found. Check the employee ID and try again.';
-
-  @override
-  String get department => 'Department';
-
-  @override
-  String get location => 'Location';
-
-  @override
   String get scanBarcode => 'Scan Barcode';
-
-  @override
-  String get submit => 'Submit';
 
   @override
   String get cancel => 'Cancel';
@@ -233,18 +204,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to remove this employee from this device?';
 
   @override
-  String get addAssignment => 'Add Assignment';
-
-  @override
   String get removeAssignment => 'Remove Assignment';
-
-  @override
-  String get addAssignmentConfirmation =>
-      'Are you sure you want to assign this device to the selected employee?';
-
-  @override
-  String get removeAssignmentConfirmation =>
-      'Are you sure you want to remove this employee from the device?';
 
   @override
   String get assignmentAddedSuccessfully =>
@@ -261,13 +221,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get assignmentRemovalFailure =>
       'Unable to remove the assignment. Please try again.';
-
-  @override
-  String get confirmSubmission => 'Confirm Submission';
-
-  @override
-  String get submitConfirmationMessage =>
-      'Are you sure you want to submit the registration?';
 
   @override
   String get initializingCamera => 'Initializing camera...';
