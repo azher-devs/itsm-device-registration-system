@@ -1,5 +1,7 @@
 # ITSM Device Registration System
 
+## User Flow
+
 ![User Flow](ScreenShots/user%20flow.png)
 
 A Flutter application for IT Department to register and manage employee device assignments. The app supports device lookup, employee verification, barcode scanning, and assignment updates through a simple mobile workflow.
