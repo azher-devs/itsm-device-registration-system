@@ -107,6 +107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brand => 'Brand';
 
   @override
+  String get model => 'Model';
+
+  @override
+  String get assetNumber => 'Asset Number';
+
+  @override
   String get deviceType => 'Device Type';
 
   @override
@@ -116,10 +122,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assigned => 'Assigned';
 
   @override
+  String get notAssigned => 'Not Assigned';
+
+  @override
   String get serialNumber => 'Serial Number';
 
   @override
-  String get enterSerialNumber => 'Enter serial number';
+  String get serialNumberFromDevice => 'Loaded from selected device';
 
   @override
   String get employeeId => 'Employee ID';
@@ -137,9 +146,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidTagNumber => 'Enter a valid tag number.';
 
   @override
-  String get invalidSerialNumber => 'Enter a valid serial number.';
-
-  @override
   String get invalidEmployeeId => 'Enter a valid employee ID.';
 
   @override
@@ -153,16 +159,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get employeeName => 'Employee Name';
 
   @override
-  String get department => 'Department';
+  String get organization => 'Organization';
 
   @override
-  String get location => 'Location';
+  String get assignedEmployee => 'Assigned employee';
+
+  @override
+  String get notAvailable => 'Not available';
+
+  @override
+  String get deviceLookupTimeout =>
+      'Device lookup timed out. Please try again.';
 
   @override
   String get scanBarcode => 'Scan Barcode';
-
-  @override
-  String get submit => 'Submit';
 
   @override
   String get cancel => 'Cancel';
@@ -171,11 +181,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirm => 'Confirm';
 
   @override
-  String get confirmSubmission => 'Confirm Submission';
+  String get add => 'Add';
 
   @override
-  String get submitConfirmationMessage =>
-      'Are you sure you want to submit the registration?';
+  String get remove => 'Remove';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get assignDevice => 'Assign Device';
+
+  @override
+  String get assignDeviceConfirmation =>
+      'Are you sure you want to assign this device?';
+
+  @override
+  String get removeDeviceAssignmentConfirmation =>
+      'Are you sure you want to remove this employee from this device?';
+
+  @override
+  String get removeAssignment => 'Remove Assignment';
+
+  @override
+  String get assignmentAddedSuccessfully =>
+      'The device has been assigned successfully.';
+
+  @override
+  String get assignmentRemovedSuccessfully =>
+      'Employee removed from the device successfully.';
+
+  @override
+  String get assignmentAddFailure =>
+      'Unable to add the assignment. Please try again.';
+
+  @override
+  String get assignmentRemovalFailure =>
+      'Unable to remove the assignment. Please try again.';
 
   @override
   String get initializingCamera => 'Initializing camera...';
@@ -195,7 +240,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alignBarcode => 'Align the barcode within\nthe frame to scan';
 
   @override
+  String get scanFromGallery => 'Scan from Gallery';
+
+  @override
+  String get noBarcodeFoundTitle => 'No Barcode Found';
+
+  @override
+  String get noBarcodeFoundMessage =>
+      'No barcode was found in the selected image.';
+
+  @override
+  String get tryAgain => 'Try Again';
+
+  @override
+  String get useCamera => 'Use Camera';
+
+  @override
+  String get galleryPermissionTitle => 'Gallery Access Required';
+
+  @override
+  String get galleryPermissionMessage =>
+      'Allow photo access to select an image and scan its barcode.';
+
+  @override
+  String get galleryScanFailed =>
+      'Unable to scan the selected image. Please try again.';
+
+  @override
+  String get openSettings => 'Open Settings';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get tagNumberCopied => 'Tag Number copied';
+
+  @override
+  String get serialNumberCopied => 'Serial Number copied';
+
+  @override
+  String get employeeIdCopied => 'Employee ID copied';
+
+  @override
   String get manualEntry => 'Manual Entry';
+
+  @override
+  String get manualTagEntry => 'Enter Tag Number';
+
+  @override
+  String get enterTagNumber => 'Enter a tag number';
 
   @override
   String get success => 'Success!';

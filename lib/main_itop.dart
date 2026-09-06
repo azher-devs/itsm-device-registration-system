@@ -1,15 +1,15 @@
-// Application entry point and startup preference restoration.
+// Authorized real-server entry point using the dedicated Dart configuration.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/itsm_app.dart';
+import 'config/itop_config.dart';
 import 'controllers/device_registration_controller.dart';
 import 'controllers/locale_controller.dart';
 import 'controllers/theme_controller.dart';
-import 'repositories/demo_device_registration_repository.dart';
 
-/// Starts the Flutter app with Fake API data until server access is available.
+/// Starts the application with the configured Dio-backed repository provider.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final localeController = await LocaleController.load();
@@ -18,9 +18,7 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       overrides: [
-        deviceRegistrationRepositoryProvider.overrideWithValue(
-          DemoDeviceRegistrationRepository(),
-        ),
+        itopConfigurationProvider.overrideWithValue(ITopConfig.configuration),
       ],
       child: ItsmApp(
         localeController: localeController,

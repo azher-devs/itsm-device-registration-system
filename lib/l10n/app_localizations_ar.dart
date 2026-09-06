@@ -107,6 +107,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get brand => 'العلامة التجارية';
 
   @override
+  String get model => 'الطراز';
+
+  @override
+  String get assetNumber => 'رقم الأصل';
+
+  @override
   String get deviceType => 'نوع الجهاز';
 
   @override
@@ -116,10 +122,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get assigned => 'مخصص';
 
   @override
+  String get notAssigned => 'غير مخصص';
+
+  @override
   String get serialNumber => 'الرقم التسلسلي';
 
   @override
-  String get enterSerialNumber => 'أدخل الرقم التسلسلي';
+  String get serialNumberFromDevice => 'يتم تحميله من الجهاز المحدد';
 
   @override
   String get employeeId => 'الرقم الوظيفي';
@@ -137,9 +146,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invalidTagNumber => 'أدخل رقم جهاز صحيحًا.';
 
   @override
-  String get invalidSerialNumber => 'أدخل رقمًا تسلسليًا صحيحًا.';
-
-  @override
   String get invalidEmployeeId => 'أدخل رقمًا وظيفيًا صحيحًا.';
 
   @override
@@ -153,16 +159,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get employeeName => 'اسم الموظف';
 
   @override
-  String get department => 'القسم';
+  String get organization => 'المؤسسة';
 
   @override
-  String get location => 'الموقع';
+  String get assignedEmployee => 'الموظف المخصص';
+
+  @override
+  String get notAvailable => 'غير متوفر';
+
+  @override
+  String get deviceLookupTimeout =>
+      'انتهت مهلة البحث عن الجهاز. يرجى المحاولة مرة أخرى.';
 
   @override
   String get scanBarcode => 'مسح الباركود';
-
-  @override
-  String get submit => 'إرسال';
 
   @override
   String get cancel => 'إلغاء';
@@ -171,11 +181,45 @@ class AppLocalizationsAr extends AppLocalizations {
   String get confirm => 'تأكيد';
 
   @override
-  String get confirmSubmission => 'تأكيد الإرسال';
+  String get add => 'إضافة';
 
   @override
-  String get submitConfirmationMessage =>
-      'هل أنت متأكد أنك تريد إرسال التسجيل؟';
+  String get remove => 'إزالة';
+
+  @override
+  String get yes => 'نعم';
+
+  @override
+  String get no => 'لا';
+
+  @override
+  String get assignDevice => 'تخصيص الجهاز';
+
+  @override
+  String get assignDeviceConfirmation =>
+      'هل أنت متأكد أنك تريد تخصيص هذا الجهاز؟';
+
+  @override
+  String get removeDeviceAssignmentConfirmation =>
+      'هل أنت متأكد أنك تريد إزالة هذا الموظف من هذا الجهاز؟';
+
+  @override
+  String get removeAssignment => 'إزالة العهدة';
+
+  @override
+  String get assignmentAddedSuccessfully => 'تم تخصيص الجهاز بنجاح.';
+
+  @override
+  String get assignmentRemovedSuccessfully =>
+      'تمت إزالة الموظف من الجهاز بنجاح.';
+
+  @override
+  String get assignmentAddFailure =>
+      'تعذرت إضافة العهدة. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get assignmentRemovalFailure =>
+      'تعذرت إزالة العهدة. يرجى المحاولة مرة أخرى.';
 
   @override
   String get initializingCamera => 'جاري تهيئة الكاميرا...';
@@ -194,7 +238,54 @@ class AppLocalizationsAr extends AppLocalizations {
   String get alignBarcode => 'ضع الباركود داخل\nالإطار للمسح';
 
   @override
+  String get scanFromGallery => 'المسح من المعرض';
+
+  @override
+  String get noBarcodeFoundTitle => 'لم يتم العثور على باركود';
+
+  @override
+  String get noBarcodeFoundMessage =>
+      'لم يتم العثور على باركود في الصورة المحددة.';
+
+  @override
+  String get tryAgain => 'حاول مرة أخرى';
+
+  @override
+  String get useCamera => 'استخدام الكاميرا';
+
+  @override
+  String get galleryPermissionTitle => 'مطلوب إذن الوصول إلى الصور';
+
+  @override
+  String get galleryPermissionMessage =>
+      'اسمح بالوصول إلى الصور لاختيار صورة ومسح الباركود منها.';
+
+  @override
+  String get galleryScanFailed => 'تعذر مسح الصورة المحددة. حاول مرة أخرى.';
+
+  @override
+  String get openSettings => 'فتح الإعدادات';
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String get tagNumberCopied => 'تم نسخ رقم الجهاز';
+
+  @override
+  String get serialNumberCopied => 'تم نسخ الرقم التسلسلي';
+
+  @override
+  String get employeeIdCopied => 'تم نسخ الرقم الوظيفي';
+
+  @override
   String get manualEntry => 'إدخال يدوي';
+
+  @override
+  String get manualTagEntry => 'إدخال رقم الجهاز';
+
+  @override
+  String get enterTagNumber => 'أدخل رقم الجهاز';
 
   @override
   String get success => 'تم بنجاح!';

@@ -1,0 +1,620 @@
+// Widget and controller tests for device assignment actions.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:itsm_device_registration_system/controllers/device_registration_controller.dart';
+import 'package:itsm_device_registration_system/core/constants/app_routes.dart';
+import 'package:itsm_device_registration_system/core/services/audio_service.dart';
+import 'package:itsm_device_registration_system/core/services/clipboard_service.dart';
+import 'package:itsm_device_registration_system/core/theme/app_theme.dart';
+import 'package:itsm_device_registration_system/l10n/app_localizations.dart';
+import 'package:itsm_device_registration_system/models/device.dart';
+import 'package:itsm_device_registration_system/models/employee.dart';
+import 'package:itsm_device_registration_system/repositories/device_registration_repository.dart';
+import 'package:itsm_device_registration_system/shared/widgets/info_card.dart';
+import 'package:itsm_device_registration_system/views/registration/device_registration_screen.dart';
+
+const employee = Employee(
+  itopKey: '10064',
+  employeeNumber: 'EMP-10045',
+  fullName: 'Ahmed Al Balushi',
+  email: 'ahmed@example.com',
+  organization: 'Information Technology',
+  phone: '+968 1234 5678',
+  status: 'Active',
+  jobTitle: 'Support Engineer',
+);
+
+const unassignedDevice = Device(
+  itopKey: '1603',
+  itopClass: 'PC',
+  tagNumber: 'TAG-UNASSIGNED',
+  brand: 'Dell',
+  model: 'Latitude 5420',
+  assetNumber: 'ASSET-1603',
+  deviceType: 'Laptop',
+  serialNumber: 'SN-UNASSIGNED',
+  status: 'In Service',
+  contacts: [],
+);
+
+const assignedDevice = Device(
+  itopKey: '1604',
+  itopClass: 'PC',
+  tagNumber: 'TAG-ASSIGNED',
+  brand: 'HP',
+  deviceType: 'Desktop',
+  serialNumber: 'SN-ASSIGNED',
+  status: 'In Service',
+  contacts: [DeviceContact(contactId: '10064', employeeNumber: 'EMP-10045')],
+);
+
+const secondDevice = Device(
+  itopKey: '1605',
+  itopClass: 'Tablet',
+  tagNumber: 'TAG-SECOND',
+  brand: 'Lenovo',
+  deviceType: 'Tablet',
+  serialNumber: 'SN-SECOND',
+  status: 'Available',
+  contacts: [],
+);
+
+/// Predictable repository used to verify requests without network access.
+class FakeRegistrationRepository implements DeviceRegistrationRepository {
+  final devices = <String, Device>{
+    unassignedDevice.tagNumber: unassignedDevice,
+    assignedDevice.tagNumber: assignedDevice,
+    secondDevice.tagNumber: secondDevice,
+  };
+  final employees = <String, Employee>{employee.employeeNumber: employee};
+
+  int addCalls = 0;
+  int removeCalls = 0;
+  bool failAdd = false;
+  bool failRemove = false;
+
+  @override
+  Future<Device> getDevice(String barcode) async {
+    final device = devices[barcode];
+    if (device == null) {
+      throw const RegistrationDataException('Device not found');
+    }
+    return device;
+  }
+
+  @override
+  Future<Employee> getEmployee(String employeeNumber) async {
+    final result = employees[employeeNumber];
+    if (result == null) {
+      throw const RegistrationDataException('Employee not found');
+    }
+    return result;
+  }
+
+  @override
+  Future<Employee> getEmployeeByContactId(String contactId) async {
+    if (contactId != employee.itopKey) {
+      throw const RegistrationDataException('Employee not found');
+    }
+    return employee;
+  }
+
+  @override
+  Future<String> addAssignment({
+    required Device device,
+    required Employee employee,
+  }) async {
+    addCalls++;
+    if (failAdd) {
+      throw const RegistrationDataException('API add failed');
+    }
+    return 'Object created';
+  }
+
+  @override
+  Future<String> removeAssignment({
+    required Device device,
+    required Employee employee,
+  }) async {
+    removeCalls++;
+    if (failRemove) {
+      throw const RegistrationDataException('API remove failed');
+    }
+    return 'Objects deleted';
+  }
+
+  @override
+  Future<String> renameDevice({
+    required Device device,
+    required String newName,
+  }) async {
+    return 'Object updated';
+  }
+}
+
+/// Records success-sound requests without invoking a platform audio plugin.
+class FakeSuccessAudioPlayer implements SuccessAudioPlayer {
+  int playCalls = 0;
+
+  @override
+  Future<void> playSuccess() async {
+    playCalls++;
+  }
+}
+
+/// Records copied values without invoking the platform clipboard channel.
+class FakeClipboardWriter implements ClipboardWriter {
+  final copiedValues = <String>[];
+
+  @override
+  Future<void> copy(String value) async {
+    copiedValues.add(value);
+  }
+}
+
+void main() {
+  late FakeRegistrationRepository repository;
+  late FakeSuccessAudioPlayer successAudioPlayer;
+  late FakeClipboardWriter clipboardWriter;
+
+  setUp(() {
+    repository = FakeRegistrationRepository();
+    successAudioPlayer = FakeSuccessAudioPlayer();
+    clipboardWriter = FakeClipboardWriter();
+  });
+
+  /// Builds registration with an injectable repository and optional scanner.
+  Future<void> pumpRegistration(
+    WidgetTester tester, {
+    String? initialTag,
+    String? scannedTag,
+    Locale locale = const Locale('en'),
+    bool darkMode = false,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          deviceRegistrationRepositoryProvider.overrideWithValue(repository),
+          successAudioPlayerProvider.overrideWithValue(successAudioPlayer),
+          clipboardServiceProvider.overrideWithValue(clipboardWriter),
+        ],
+        child: MaterialApp(
+          theme: darkMode ? AppTheme.dark : null,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routes: {
+            if (scannedTag != null)
+              AppRoutes.scanner: (_) => Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(scannedTag),
+                  child: const Text('Return Scan'),
+                ),
+              ),
+          },
+          home: DeviceRegistrationScreen(
+            args: RegistrationScreenArgs(tagNumber: initialTag),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Finder field(String key) => find.descendant(
+    of: find.byKey(Key(key)),
+    matching: find.byType(TextField),
+  );
+
+  Future<void> searchDevice(WidgetTester tester, String tag) async {
+    await tester.enterText(field('tag_number_field'), tag);
+    await tester.tap(find.byIcon(Icons.search).first);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> searchEmployee(WidgetTester tester) async {
+    await tester.ensureVisible(field('employee_id_field'));
+    await tester.pumpAndSettle();
+    await tester.enterText(field('employee_id_field'), employee.employeeNumber);
+    final employeeSearch = find.descendant(
+      of: find.byKey(const Key('employee_id_field')),
+      matching: find.byIcon(Icons.search),
+    );
+    await tester.tap(employeeSearch);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('no device selected shows no assignment action', (tester) async {
+    await pumpRegistration(tester);
+
+    expect(find.byKey(const Key('add_assignment_button')), findsNothing);
+    expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
+  });
+
+  testWidgets('unassigned device without employee shows no Add button', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+
+    expect(find.text(unassignedDevice.serialNumber), findsWidgets);
+    expect(find.byKey(const Key('add_assignment_button')), findsNothing);
+  });
+
+  testWidgets('device card shows only approved non-empty inventory fields', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+
+    final deviceCard = find.byType(InfoCard).first;
+    Finder cardText(String value) =>
+        find.descendant(of: deviceCard, matching: find.text(value));
+
+    expect(cardText('Brand'), findsOneWidget);
+    expect(cardText(unassignedDevice.brand), findsOneWidget);
+    expect(cardText('Model'), findsOneWidget);
+    expect(cardText(unassignedDevice.model), findsOneWidget);
+    expect(cardText('Asset Number'), findsOneWidget);
+    expect(cardText(unassignedDevice.assetNumber), findsOneWidget);
+    expect(cardText('Status'), findsOneWidget);
+    expect(cardText(unassignedDevice.status), findsOneWidget);
+    expect(cardText('Tag Number'), findsNothing);
+    expect(cardText('Device Type'), findsNothing);
+    expect(cardText('Serial Number'), findsNothing);
+    expect(cardText('Assignment Status'), findsNothing);
+  });
+
+  testWidgets('device card shows N/A for empty model and asset number', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, assignedDevice.tagNumber);
+
+    final deviceCard = find.byType(InfoCard).first;
+    expect(
+      find.descendant(of: deviceCard, matching: find.text('Model')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: deviceCard, matching: find.text('Asset Number')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: deviceCard, matching: find.text('N/A')),
+      findsNWidgets(2),
+    );
+  });
+
+  testWidgets('valid employee shows Add and serial number is read-only', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    expect(find.byKey(const Key('add_assignment_button')), findsOneWidget);
+    expect(
+      tester.widget<TextField>(field('serial_number_field')).readOnly,
+      isTrue,
+    );
+    expect(find.text('Submit'), findsNothing);
+    expect(find.text('Cancel'), findsNothing);
+  });
+
+  testWidgets(
+    'copy actions follow field values and replace duplicate feedback',
+    (tester) async {
+      await pumpRegistration(tester);
+
+      expect(find.byKey(const Key('copy_tag_number')), findsNothing);
+      expect(find.byKey(const Key('copy_serial_number')), findsNothing);
+      expect(find.byKey(const Key('copy_employee_id')), findsNothing);
+
+      await searchDevice(tester, unassignedDevice.tagNumber);
+      expect(find.byKey(const Key('copy_tag_number')), findsOneWidget);
+      expect(find.byKey(const Key('copy_serial_number')), findsOneWidget);
+      expect(find.byKey(const Key('copy_employee_id')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('copy_tag_number')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('copy_tag_number')));
+      await tester.pump();
+
+      expect(clipboardWriter.copiedValues, [
+        unassignedDevice.tagNumber,
+        unassignedDevice.tagNumber,
+      ]);
+      expect(find.text('Tag Number copied'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const Key('copy_serial_number')));
+      await tester.tap(find.byKey(const Key('copy_serial_number')));
+      await tester.pump();
+      expect(clipboardWriter.copiedValues.last, unassignedDevice.serialNumber);
+      expect(find.text('Serial Number copied'), findsOneWidget);
+
+      await searchEmployee(tester);
+      expect(find.byKey(const Key('copy_employee_id')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('copy_employee_id')));
+      await tester.pump();
+      expect(clipboardWriter.copiedValues.last, employee.employeeNumber);
+      expect(find.text('Employee ID copied'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Assign Device dialog shows identifiers and No cancels', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
+    await tester.tap(find.byKey(const Key('add_assignment_button')));
+    await tester.pumpAndSettle();
+    final dialog = find.byKey(const Key('assignment_confirmation_dialog'));
+    expect(find.text('Assign Device'), findsOneWidget);
+    expect(
+      find.text('Are you sure you want to assign this device?'),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text(unassignedDevice.tagNumber),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text(employee.employeeNumber)),
+      findsOneWidget,
+    );
+    expect(find.text('Yes'), findsOneWidget);
+
+    await tester.tap(find.text('No'));
+    await tester.pumpAndSettle();
+    expect(repository.addCalls, 0);
+    expect(successAudioPlayer.playCalls, 0);
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('Assign Device dialog uses dark theme surfaces and text', (
+    tester,
+  ) async {
+    await pumpRegistration(tester, darkMode: true);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
+    await tester.tap(find.byKey(const Key('add_assignment_button')));
+    await tester.pumpAndSettle();
+
+    final dialog = tester.widget<Dialog>(
+      find.byKey(const Key('assignment_confirmation_dialog')),
+    );
+    final title = tester.widget<Text>(find.text('Assign Device'));
+    final message = tester.widget<Text>(
+      find.text('Are you sure you want to assign this device?'),
+    );
+
+    expect(dialog.backgroundColor, AppTheme.darkSurfaceVariant);
+    expect(title.style?.color, Colors.white);
+    expect(message.style?.color, isNot(AppTheme.mutedText));
+  });
+
+  testWidgets('confirmed Add sends POST action and changes to Remove', (
+    tester,
+  ) async {
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
+    await tester.tap(find.byKey(const Key('add_assignment_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm_assignment_action')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(repository.addCalls, 1);
+    expect(successAudioPlayer.playCalls, 1);
+    expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
+    expect(find.text(employee.fullName), findsOneWidget);
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsOneWidget,
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('failed Add preserves employee and unassigned state', (
+    tester,
+  ) async {
+    repository.failAdd = true;
+    await pumpRegistration(tester);
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
+    await tester.tap(find.byKey(const Key('add_assignment_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm_assignment_action')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('add_assignment_button')), findsOneWidget);
+    expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
+    expect(find.text(employee.fullName), findsOneWidget);
+    expect(find.text('API add failed'), findsOneWidget);
+    expect(successAudioPlayer.playCalls, 0);
+    expect(
+      find.text('The device has been assigned successfully.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('assigned device loads employee and shows only Remove', (
+    tester,
+  ) async {
+    await pumpRegistration(tester, initialTag: assignedDevice.tagNumber);
+
+    expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
+    expect(find.byKey(const Key('add_assignment_button')), findsNothing);
+    expect(find.text(employee.fullName), findsOneWidget);
+    expect(
+      tester.widget<TextField>(field('employee_id_field')).readOnly,
+      isTrue,
+    );
+  });
+
+  testWidgets('Remove Assignment dialog shows identifiers and No cancels', (
+    tester,
+  ) async {
+    await pumpRegistration(tester, initialTag: assignedDevice.tagNumber);
+    await tester.ensureVisible(
+      find.byKey(const Key('remove_assignment_button')),
+    );
+    await tester.tap(find.byKey(const Key('remove_assignment_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remove Assignment'), findsOneWidget);
+    expect(
+      find.text(
+        'Are you sure you want to remove this employee from this device?',
+      ),
+      findsOneWidget,
+    );
+    final dialog = find.byKey(const Key('assignment_confirmation_dialog'));
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text(assignedDevice.tagNumber),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text(employee.employeeNumber)),
+      findsOneWidget,
+    );
+    expect(find.text('Yes'), findsOneWidget);
+
+    await tester.tap(find.text('No'));
+    await tester.pumpAndSettle();
+    expect(repository.removeCalls, 0);
+    expect(successAudioPlayer.playCalls, 0);
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('confirmed Remove clears employee but preserves device', (
+    tester,
+  ) async {
+    await pumpRegistration(tester, initialTag: assignedDevice.tagNumber);
+    await tester.ensureVisible(
+      find.byKey(const Key('remove_assignment_button')),
+    );
+    await tester.tap(find.byKey(const Key('remove_assignment_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm_assignment_action')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(repository.removeCalls, 1);
+    expect(successAudioPlayer.playCalls, 1);
+    expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
+    expect(find.text(employee.fullName), findsNothing);
+    expect(find.text(assignedDevice.tagNumber), findsWidgets);
+    expect(find.text(assignedDevice.serialNumber), findsWidgets);
+    expect(
+      tester.widget<TextField>(field('employee_id_field')).controller?.text,
+      isEmpty,
+    );
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsOneWidget,
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('failed Remove preserves assigned employee and action', (
+    tester,
+  ) async {
+    repository.failRemove = true;
+    await pumpRegistration(tester, initialTag: assignedDevice.tagNumber);
+    await tester.ensureVisible(
+      find.byKey(const Key('remove_assignment_button')),
+    );
+    await tester.tap(find.byKey(const Key('remove_assignment_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm_assignment_action')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('remove_assignment_button')), findsOneWidget);
+    expect(find.text(employee.fullName), findsOneWidget);
+    expect(find.text('API remove failed'), findsOneWidget);
+    expect(successAudioPlayer.playCalls, 0);
+    expect(
+      find.text('Employee removed from the device successfully.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('scanning another device clears stale employee state', (
+    tester,
+  ) async {
+    await pumpRegistration(
+      tester,
+      initialTag: assignedDevice.tagNumber,
+      scannedTag: secondDevice.tagNumber,
+    );
+    expect(find.text(employee.fullName), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Scan Barcode'));
+    await tester.tap(find.text('Scan Barcode'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Return Scan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(secondDevice.tagNumber), findsWidgets);
+    expect(find.text(employee.fullName), findsNothing);
+    expect(find.byKey(const Key('remove_assignment_button')), findsNothing);
+  });
+
+  testWidgets('Arabic Add dialog uses localized assignment copy', (
+    tester,
+  ) async {
+    await pumpRegistration(tester, locale: const Locale('ar'));
+    await searchDevice(tester, unassignedDevice.tagNumber);
+    await searchEmployee(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('add_assignment_button')));
+    await tester.tap(find.byKey(const Key('add_assignment_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تخصيص الجهاز'), findsOneWidget);
+    expect(
+      find.text('هل أنت متأكد أنك تريد تخصيص هذا الجهاز؟'),
+      findsOneWidget,
+    );
+    expect(find.text('لا'), findsOneWidget);
+    expect(find.text('نعم'), findsOneWidget);
+  });
+}

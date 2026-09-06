@@ -290,6 +290,18 @@ abstract class AppLocalizations {
   /// **'Brand'**
   String get brand;
 
+  /// No description provided for @model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get model;
+
+  /// No description provided for @assetNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset Number'**
+  String get assetNumber;
+
   /// No description provided for @deviceType.
   ///
   /// In en, this message translates to:
@@ -308,17 +320,23 @@ abstract class AppLocalizations {
   /// **'Assigned'**
   String get assigned;
 
+  /// No description provided for @notAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Assigned'**
+  String get notAssigned;
+
   /// No description provided for @serialNumber.
   ///
   /// In en, this message translates to:
   /// **'Serial Number'**
   String get serialNumber;
 
-  /// No description provided for @enterSerialNumber.
+  /// No description provided for @serialNumberFromDevice.
   ///
   /// In en, this message translates to:
-  /// **'Enter serial number'**
-  String get enterSerialNumber;
+  /// **'Loaded from selected device'**
+  String get serialNumberFromDevice;
 
   /// No description provided for @employeeId.
   ///
@@ -350,12 +368,6 @@ abstract class AppLocalizations {
   /// **'Enter a valid tag number.'**
   String get invalidTagNumber;
 
-  /// No description provided for @invalidSerialNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid serial number.'**
-  String get invalidSerialNumber;
-
   /// No description provided for @invalidEmployeeId.
   ///
   /// In en, this message translates to:
@@ -380,29 +392,35 @@ abstract class AppLocalizations {
   /// **'Employee Name'**
   String get employeeName;
 
-  /// No description provided for @department.
+  /// No description provided for @organization.
   ///
   /// In en, this message translates to:
-  /// **'Department'**
-  String get department;
+  /// **'Organization'**
+  String get organization;
 
-  /// No description provided for @location.
+  /// No description provided for @assignedEmployee.
   ///
   /// In en, this message translates to:
-  /// **'Location'**
-  String get location;
+  /// **'Assigned employee'**
+  String get assignedEmployee;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get notAvailable;
+
+  /// No description provided for @deviceLookupTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Device lookup timed out. Please try again.'**
+  String get deviceLookupTimeout;
 
   /// No description provided for @scanBarcode.
   ///
   /// In en, this message translates to:
   /// **'Scan Barcode'**
   String get scanBarcode;
-
-  /// No description provided for @submit.
-  ///
-  /// In en, this message translates to:
-  /// **'Submit'**
-  String get submit;
 
   /// No description provided for @cancel.
   ///
@@ -416,17 +434,77 @@ abstract class AppLocalizations {
   /// **'Confirm'**
   String get confirm;
 
-  /// No description provided for @confirmSubmission.
+  /// No description provided for @add.
   ///
   /// In en, this message translates to:
-  /// **'Confirm Submission'**
-  String get confirmSubmission;
+  /// **'Add'**
+  String get add;
 
-  /// No description provided for @submitConfirmationMessage.
+  /// No description provided for @remove.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to submit the registration?'**
-  String get submitConfirmationMessage;
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
+  /// No description provided for @assignDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Device'**
+  String get assignDevice;
+
+  /// No description provided for @assignDeviceConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to assign this device?'**
+  String get assignDeviceConfirmation;
+
+  /// No description provided for @removeDeviceAssignmentConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this employee from this device?'**
+  String get removeDeviceAssignmentConfirmation;
+
+  /// No description provided for @removeAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Assignment'**
+  String get removeAssignment;
+
+  /// No description provided for @assignmentAddedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'The device has been assigned successfully.'**
+  String get assignmentAddedSuccessfully;
+
+  /// No description provided for @assignmentRemovedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee removed from the device successfully.'**
+  String get assignmentRemovedSuccessfully;
+
+  /// No description provided for @assignmentAddFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to add the assignment. Please try again.'**
+  String get assignmentAddFailure;
+
+  /// No description provided for @assignmentRemovalFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to remove the assignment. Please try again.'**
+  String get assignmentRemovalFailure;
 
   /// No description provided for @initializingCamera.
   ///
@@ -458,11 +536,101 @@ abstract class AppLocalizations {
   /// **'Align the barcode within\nthe frame to scan'**
   String get alignBarcode;
 
+  /// No description provided for @scanFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan from Gallery'**
+  String get scanFromGallery;
+
+  /// No description provided for @noBarcodeFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Barcode Found'**
+  String get noBarcodeFoundTitle;
+
+  /// No description provided for @noBarcodeFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No barcode was found in the selected image.'**
+  String get noBarcodeFoundMessage;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get tryAgain;
+
+  /// No description provided for @useCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Camera'**
+  String get useCamera;
+
+  /// No description provided for @galleryPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery Access Required'**
+  String get galleryPermissionTitle;
+
+  /// No description provided for @galleryPermissionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow photo access to select an image and scan its barcode.'**
+  String get galleryPermissionMessage;
+
+  /// No description provided for @galleryScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to scan the selected image. Please try again.'**
+  String get galleryScanFailed;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get openSettings;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @tagNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag Number copied'**
+  String get tagNumberCopied;
+
+  /// No description provided for @serialNumberCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Serial Number copied'**
+  String get serialNumberCopied;
+
+  /// No description provided for @employeeIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee ID copied'**
+  String get employeeIdCopied;
+
   /// No description provided for @manualEntry.
   ///
   /// In en, this message translates to:
   /// **'Manual Entry'**
   String get manualEntry;
+
+  /// No description provided for @manualTagEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Tag Number'**
+  String get manualTagEntry;
+
+  /// No description provided for @enterTagNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a tag number'**
+  String get enterTagNumber;
 
   /// No description provided for @success.
   ///
