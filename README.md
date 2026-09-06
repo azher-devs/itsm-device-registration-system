@@ -1,164 +1,108 @@
 # ITSM Device Registration System
 
-A Flutter mobile application developed for the Sultan Qaboos University (SQU) IT Department to register, update, and manage employee device assignments.
+![User Flow](ScreenShots/user%20flow.png)
 
-## Overview
+A Flutter application for IT Department to register and manage employee device assignments. The app supports device lookup, employee verification, barcode scanning, and assignment updates through a simple mobile workflow.
 
-The application simplifies the process of assigning IT assets to employees by allowing staff to search for devices, scan barcodes, and register ownership information through a modern mobile interface.
+## Screens
+
+### Login
+
+![Login screen](ScreenShots/1-login%20screen.png)
+
+### Home
+
+![Home screen](ScreenShots/2-home%20screen.png)
+
+### Menu
+
+![Menu screen](ScreenShots/3-menu%20screen.png)
+
+### Device Registration
+
+![Device Registration screen](ScreenShots/4-device%20registration%20screen.png)
+
+### Barcode Scanner
+
+![Barcode Scanner screen](ScreenShots/5-barcode%20screen.png)
 
 ## Features
 
-- User authentication (Login)
-- Device registration
-- Barcode scanning
-- Employee ID verification
-- Arabic & English localization
-- Responsive UI
-- Light & Dark theme support
-- Session persistence
+- Login and the device-registration workflow
+- Tag Number and Employee ID lookup
+- Device and employee details after validation
+- Barcode scanning with camera and Google ML Kit
+- Add and Remove assignment actions
+- English and Arabic localization
+- Light and Dark appearance modes
+- Persisted language and appearance preferences
+- Demo repository for backend-free UI review
 
-## Technologies
+## Architecture
 
-- Flutter
-- Dart
-- Riverpod
-- Dio
-- Google ML Kit (Barcode Scanning)
-- Shared Preferences
+The project uses an **MVC-style layered architecture** with the **Repository Pattern**, a **Service Layer**, and **Riverpod** for state management and dependency injection.
+
+```text
+Presentation Layer
+lib/views/ + lib/shared/widgets/
+        ↓
+Controller Layer
+lib/controllers/device_registration_controller.dart
+        ↓
+Repository Layer
+lib/repositories/device_registration_repository.dart
+        ↓
+Service Layer
+lib/services/device_registration_api_service.dart
+        ↓
+Transport Layer
+Dio client → REST API
+```
+
+- **Views:** Build the screens and collect user input. Shared widgets contain reusable UI components.
+- **Controllers:** Riverpod controllers manage registration state, validation, loading, errors, and assignment actions.
+- **Repositories:** Define the data contract and hide the data source. `DemoDeviceRegistrationRepository` provides in-memory data, while `DioDeviceRegistrationRepository` connects to the REST API.
+- **Services:** Build API operations and send requests through the Dio client.
+- **Models:** `lib/models/` contains the `Device`, `Employee`, and API response models used between layers.
+- **App and preferences:** `ItsmApp` manages routes, themes, and localization. `LocaleController` and `ThemeController` persist settings with Shared Preferences.
+
+`main.dart` injects the demo repository for normal runs.
+
+## Tech Stack
+
+- Flutter and Dart
+- Riverpod (`flutter_riverpod`)
+- Dio for HTTP transport
+- Camera and Google ML Kit Barcode Scanning
+- Shared Preferences for persisted settings
+- Flutter localization with English and Arabic ARB resources
+- Image Picker and Permission Handler for scanner support
+- Audio Players for success feedback
 
 ## Project Structure
 
 ```text
 lib/
-├── app/
-├── controllers/
-├── core/
-├── models/
-├── repositories/
-├── services/
-├── shared/
-├── views/
-├── l10n/
-└── main.dart
+├── app/             Root app shell, routes, theme, and localization wiring
+├── controllers/     Riverpod registration state and preference controllers
+├── core/            App constants, theme, configuration, and shared services
+├── models/          Device, employee, and API response models
+├── repositories/    Repository contract plus demo and Dio implementations
+├── services/        API service and Dio client
+├── shared/widgets/  Reusable UI components
+├── views/           Splash, login, home, registration, scanner, and success screens
+├── l10n/            English and Arabic localization resources
+├── main.dart        Default demo entry point
+└── main_demo.dart   Standalone demo entry point
 ```
-
-## Screens
-
-- Splash Screen
-- Login
-- Home
-- Device Registration
-- Barcode Scanner
-- Registration Result
 
 ## Getting Started
 
-Clone the repository:
-
-```bash
-git clone https://github.com/azher-devs/itsm-device-registration-system.git
-```
-
-Install dependencies:
+Requirements: Flutter SDK and Dart SDK.
 
 ```bash
 flutter pub get
-```
-
-Run the application:
-
-```bash
 flutter run
 ```
 
-## UI Demo Mode
-
-The current application uses an in-memory repository. It does not call a real
-server and does not require a base URL, credentials, or internet access. Demo
-assignments reset when the application restarts.
-
-Run the application with the Fake API:
-
-```bash
-flutter run
-```
-
-The separate UI demo entry point remains available:
-
-```bash
-flutter run -t lib/main_demo.dart
-```
-
-Run the demo on a specific device:
-
-```bash
-flutter run -d <device-id> -t lib/main_demo.dart
-```
-
-Available Device Registration values:
-
-- `TAG-UNASSIGNED` - unassigned Dell laptop
-- `TAG-ASSIGNED` - assigned HP desktop
-- `TAG-SECOND` - second unassigned Lenovo tablet
-- `TAG-ADD-FAIL` - simulates an Add failure
-- `TAG-REMOVE-FAIL` - simulates a Remove failure
-- `TAG-TIMEOUT` - simulates a three-second lookup timeout
-- `TAG-NOT-FOUND` - simulates a missing device
-- `EMP-10045` - valid employee
-- `EMP-NOT-FOUND` - simulates a missing employee
-
-Add and Remove failures return the Fake API messages shown by the application.
-Automated tests also cover successful assignment, removal, rename payloads, and
-the documented iTop response mapping.
-
-## iTop API Preparation
-
-The Dio architecture follows the supplied iTop REST/JSON specification while
-remaining disconnected from the real server. Requests use multipart form data
-with `auth_user`, `auth_pwd`, and serialized `json_data` fields.
-
-Real-server values are centralized in:
-
-```text
-lib/config/itop_config.dart
-```
-
-The demo remains available through `lib/main.dart` and `lib/main_demo.dart`.
-For authorized real-server testing, edit only these three constants:
-
-```dart
-static const baseUrl = 'https://your-itop-server';
-static const username = 'your_username';
-static const password = 'your_password';
-```
-
-Then run the dedicated real API entry point:
-
-```bash
-flutter run -t lib/main_itop.dart
-```
-
-No JSON configuration file or `--dart-define` argument is required. Do not
-commit real credentials; restore the placeholder values before committing or
-sharing the project. Repositories, controllers, models, providers, and UI code
-do not need to change.
-
-## Requirements
-
-- Flutter SDK
-- Dart SDK
-- Android Studio or Visual Studio Code
-
-## Disclaimer
-
-This project was developed as part of an On-the-Job Training (OJT) program at Sultan Qaboos University.
-
-## Author
-
-**Al Azher Al Kindi**
-
-Software Engineering Student
-
-University of Technology and Applied Sciences (UTAS), Oman
-
-GitHub: https://github.com/azher-devs
+The default entry point uses the in-memory demo repository and does not require a server or credentials.
