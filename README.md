@@ -1,4 +1,3 @@
-# ITSM Device Registration System
 
 ![User Flow](ScreenShots/user%20flow.png)
 
